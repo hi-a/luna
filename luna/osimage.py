@@ -35,6 +35,8 @@ import subprocess
 import libtorrent
 import exceptions
 
+from platform import linux_distribution
+
 from luna.base import Base
 from luna.cluster import Cluster
 from luna import utils
@@ -64,7 +66,8 @@ class OsImage(Base):
                          'kernopts': type(''), 'kernmodules': type(''),
                          'dracutmodules': type(''), 'tarball': type(''),
                          'torrent': type(''), 'kernfile': type(''),
-                         'initrdfile': type(''), 'grab_exclude_list': type(''),
+                         'initrdfile': type(''), 'os_family': type(''),
+                         'grab_exclude_list': type(''),
                          'grab_filesystems': type(''), 'comment': type('')}
 
         # Check if this osimage is already present in the datastore
@@ -93,6 +96,18 @@ class OsImage(Base):
                 self.log.error(err_msg)
                 raise RuntimeError, err_msg
 
+            real_root = os.open("/", os.O_RDONLY)
+            os.chroot(path)
+            dist = linux_distribution(supported_dists=('debian', 'redhat'))
+            os.fchdir(real_root)
+            os.chroot(".")
+            os.close(real_root)
+
+            if dist[0].lower() in ['debian', 'ubuntu']:
+                self._family = 'debian'
+            elif dist[0].lower() in ['centos linux', 'fedora', 'redhat']:
+                self._family = 'redhat'
+
             kernels = self.get_package_ver(path, 'kernel')
             if not kernels:
                 err_msg = "No kernels installed in '{}'".format(path)
@@ -116,7 +131,7 @@ class OsImage(Base):
 
             # Store the new osimage in the datastore
 
-            osimage = {'name': name, 'path': path,
+            osimage = {'name': name, 'path': path, 'family': self._family,
                        'kernver': kernver, 'kernopts': kernopts,
                        'kernfile': '', 'initrdfile': '',
                        'dracutmodules': 'luna,-i18n,-plymouth',
@@ -143,17 +158,32 @@ class OsImage(Base):
         return versions
 
     def get_package_ver(self, path, package):
-        rpm.addMacro("_dbpath", path + '/var/lib/rpm')
-        ts = rpm.TransactionSet()
         versions = list()
 
         try:
-            mi = ts.dbMatch('name', package)
-            for h in mi:
-                version = "%s-%s.%s" % (h['VERSION'], h['RELEASE'], h['ARCH'])
-                versions.append(version)
-        except rpm.error:
-            return []
+            family = self._family
+        except AttributeError:
+            family = self.get('family')
+
+        if family == 'debian':
+            cmd = ("dpkg --admindir=" + path + "/var/lib/dpkg -l "
+                   "| awk '/^.i +linux-image-extra/ && $2~/[0-9]/ {print $2}' "
+                   "| cut -d'-' -f4- | sort -r")
+            ps = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+            out = ps.communicate()[0].strip().splitlines()
+            versions.extend(out)
+
+        elif family == 'redhat':
+            rpm.addMacro("_dbpath", path + '/var/lib/rpm')
+            ts = rpm.TransactionSet()
+            try:
+                mi = ts.dbMatch('name', package)
+                for h in mi:
+                    version = "%s-%s.%s" % (h['VERSION'],
+                                            h['RELEASE'], h['ARCH'])
+                    versions.append(version)
+            except rpm.error:
+                versions = []
 
         return versions
 
@@ -364,8 +394,8 @@ class OsImage(Base):
         create = None
 
         try:
-            dracut_modules = subprocess.Popen(['/usr/sbin/dracut', '--kver',
-                                               kernver, '--list-modules'],
+            dracut_modules = subprocess.Popen(['/usr/sbin/dracut', '--kver', kernver,
+                                               '--list-modules'],
                                               stdout=subprocess.PIPE)
             luna_exists = False
 
