@@ -59,4 +59,4 @@ trap clean EXIT
 mount_d
 shift
 
-FAKE_KERN=$FAKE_KERN LD_PRELOAD=libluna-fakeuname.so PS1="chroot [\u@$OSIMAGE \W]\$ " chroot $CHROOT_PATH "$@"
+chroot $CHROOT_PATH env -i FAKE_KERN=$FAKE_KERN LD_PRELOAD=libluna-fakeuname.so /bin/bash --rcfile <(echo "PS1=\"chroot [\u@$OSIMAGE \W]\$ \"") -i ${@:+-c $@}
