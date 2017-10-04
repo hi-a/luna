@@ -45,7 +45,15 @@ class Manager(tornado.web.RequestHandler):
         step = self.get_argument('step')
 
         if step == 'boot':
-            nodes = luna.list('node')
+
+            try:
+                nodes = luna.list('node')
+            except Exception as e:
+                error = "Couldn't reach the database!"
+                self.log.error(error)
+                self.send_error(503, reason=error)
+                return
+
             p = {
                 'protocol': self.protocol,
                 'server_ip': self.server_ip,
@@ -72,9 +80,10 @@ class Manager(tornado.web.RequestHandler):
                 try:
                     node = luna.Node(name=req_nodename, mongo_db=self.mongo)
                 except:
-                    self.log.error("No such node '{}' exists"
-                                   .format(req_nodename))
-                    self.send_error(400)
+                    error = ("Non-existing node '{}' or unreachable database"
+                             .format(req_nodename))
+                    self.log.error(error)
+                    self.send_error(404, reason=error)
                     return
 
                 mac = None
@@ -209,8 +218,10 @@ class Manager(tornado.web.RequestHandler):
             try:
                 node = luna.Node(name=node_name, mongo_db=self.mongo)
             except:
-                self.log.error("No such node '{}' exists".format(node_name))
-                self.send_error(400)
+                error = ("Non-existing node '{}' or unreachable database"
+                         .format(node_name))
+                self.log.error(error)
+                self.send_error(404, reason=error)
                 return
 
             status = self.get_argument('status', default='')
