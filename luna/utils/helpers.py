@@ -51,39 +51,69 @@ def set_mac_node(mac, node, mongo_db=None):
     mongo_collection.insert({'mac': mac, 'node': node})
 
 
+def load_configuration():
+    conf_parser = ConfigParser.ConfigParser()
+
+    if not conf_parser.read("/etc/luna.conf"):
+        raise RuntimeError("Can't read config file at /etc/luna.conf")
+
+    config = {s: dict(conf_parser.items(s)) for s in conf_parser.sections()}
+    defaults = {'MongoDB': {
+                   'server': 'localhost', 'replicaset': '',
+                   'authdb': '', 'user': '', 'password': '',
+                   'ssl': 'disabled', 'cacert': ''
+                },
+                'cluster': {
+                   'frontend_https': False, 'frontend_port': 7050,
+                   'user': 'luna', 'path': '/opt/luna',
+                   'lweb_port': 7051, 'lweb_workers': 0,
+                   'lweb_pidfile': '/run/luna/lweb.pid',
+                   'ltorrent_pidfile': '/run/luna/ltorrent.pid',
+                   'torrent_listen_port_min': 7052,
+                   'torrent_listen_port_max': 7200,
+                   'torrent_soft_timeout': 600, 'torrent_hard_timeout': 3600,
+                   'tracker_interval': 30, 'tracker_min_interval': 20,
+                   'tracker_maxpeers': 200
+                }}
+
+    for s in conf_parser.sections():
+        for option in defaults[s].iterkeys():
+            if option not in config[s] or not option:
+                config[s][option] = defaults[s][option]
+
+    # Quote the password for the connection string
+    mongo_pass = urllib.quote_plus(config['MongoDB']['password'])
+    config['MongoDB']['password'] = mongo_pass
+
+    if config['cluster']['frontend_https'].lower() is 'true':
+        config['cluster']['frontend_https'] = True
+    else:
+        config['cluster']['frontend_https'] = False
+
+    return config
+
+
 def get_con_options():
+    config = load_configuration()['MongoDB']
+
     con_options = {'host': 'mongodb://'}
-    conf_defaults = {'server': 'localhost', 'replicaset': None,
-                    'authdb': None, 'user': None, 'password': None,
-                    'SSL': None, 'CAcert': None}
-    conf = ConfigParser.ConfigParser(conf_defaults)
 
-    if not conf.read("/etc/luna.conf"):
-        return {'host': conf_defaults['server']}
+    if config['user'] and config['password']:
+        con_options['host'] += config['user'] + ':' + config['password'] + '@'
 
-    replicaset = conf.get("MongoDB", "replicaset")
-    server = conf.get("MongoDB", "server")
-    authdb = conf.get("MongoDB", "authdb")
-    user = conf.get("MongoDB", "user")
-    password = urllib.quote_plus(conf.get("MongoDB", "password"))
-    need_ssl = conf.get("MongoDB", "SSL")
-    ca_cert = conf.get("MongoDB", "CAcert")
+    con_options['host'] += config['server']
 
-    if user and password:
-        con_options['host'] += user + ':' + password + '@'
+    if config['authdb']:
+        con_options['host'] += '/' + config['authdb']
 
-    con_options['host'] += server
+    if config['replicaset']:
+        con_options['replicaSet'] = config['replicaset']
 
-    if authdb:
-        con_options['host'] += '/' + authdb
-
-    if replicaset:
-        con_options['replicaSet'] = replicaset
-
-    if need_ssl in ['Enabled', 'enabled']:
+    if config['ssl'].lower() is 'enabled':
         con_options['ssl'] = True
-        if ca_cert:
-            con_options['ssl_ca_certs'] = ca_cert
+
+        if config['cacert']:
+            con_options['ssl_ca_certs'] = config['cacert']
             con_options['ssl_cert_reqs'] = ssl.CERT_REQUIRED
         else:
             con_options['ssl_cert_reqs'] = ssl.CERT_NONE

@@ -21,34 +21,30 @@ along with Luna.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
 
-import luna
-import libtorrent as lt
 import os
 import sys
-import threading
-import logging
-import logging.handlers
-import datetime
-import Queue
-import pwd, grp
+import pwd
 import time
-import shutil
 import signal
 import atexit
+import logging
+import datetime
 import traceback
 
-runas_user = None
-runas_group = None
-torrents_path = None
-pidfile = None
-daemonize = None
-soft_timeout = None
-hard_timeout = None
+import libtorrent as lt
+
+import luna
+from luna import utils
+
 
 try:
     log_dir = os.environ['LUNA_LOGDIR']
 except KeyError:
     log_dir = '/var/log/luna'
+
+config = utils.helpers.load_configuration()['cluster']
+
+torrents_path = None
 
 flag_seed_mode = 1
 flag_override_resume_data = 2
@@ -381,22 +377,14 @@ def start_torrent_client():
         logger.info("No torrents. Exiting.")
         return None
 
-    os.chdir(path)
-    cluster = luna.Cluster()
-
-    ip = ''
-    try:
-        if cluster.is_ha():
-            ip = cluster.get_cluster_ips()[0]
-        else:
-            ip = cluster.get('frontend_address')
-    except:
-        logger.error(("Could not decide on ip to listen on."
-                      "Either cluster IPs or frontend address must be defined"))
+    if 'frontend_address' not in config:
+        logger.error('frontend_address needs to be configured!')
         raise RuntimeError
 
-    portmin = cluster.get('torrent_listen_port_min') or 7052
-    portmax = cluster.get('torrent_listen_port_max') or 7200
+    os.chdir(torrents_path)
+
+    portmin = config['torrent_listen_port_min']
+    portmax = config['torrent_listen_port_max']
 
     try:
         t_session = lt.session(flags=0)
@@ -407,35 +395,31 @@ def start_torrent_client():
     try:
         # Set the ip parameter in announce requests; default: ip ignored
         settings = lt.session_settings()
-        settings.announce_ip = ip
+        settings.announce_ip = config['frontend_address']
         settings.ssl_listen = 0
 
         t_session.set_settings(settings)
-        t_session.listen_on(portmin, portmax, ip)
+        t_session.listen_on(portmin, portmax, config['frontend_address'])
 
     except:
-        logger.error("Failed to listen on %s using port range [%s, %s]", ip, portmin, portmax)
+        logger.error("Failed to listen on %s using port range [%s, %s]",
+                     config['frontend_address'], portmin, portmax)
         raise RuntimeError
 
     peer_id = lt.sha1_hash('lunalunalunalunaluna')
     t_session.set_peer_id(peer_id)
-    #t_session.flag_share_mode = True
-    #t_session.flag_seed_mode = True
-    #t_session.flag_super_seeding = 1
-    #t_session.async_add_torrent(parm_dict)
-    #t_session.resume()
-    #print torrents[0].id
-    #print t_session.is_paused()
-    #print t_session.find_torrent(torrents[0].id)
     update_torrent_client()
+
 
 def update_torrent_client():
     global t_session
+
     if not bool(t_session):
         return None
-    #cluster = luna.Cluster()
+
     flags = flag_seed_mode | flag_upload_mode | flag_super_seeding
     parm_dict = {"save_path": torrents_path, 'flags': flags }
+
     for tf in torrents:
         if torrents[tf].duplicate:
             continue
@@ -489,12 +473,12 @@ def update_inactive_torrents():
                 logger.info("'{}' used by '{}'".format(tf.basename, i.ip))
             tf.uploaded = active_torr.status().total_upload
             tf.accessed(True)
-        if tf.accessed() < get_now(-soft_timeout):
+        if tf.accessed() < get_now(-int(config['torrent_soft timeout'])):
             logger.info("Timeout for inactive torrent '{}' for '{}'. Files will be deleted.".format(tf.basename, tf.tarball))
             tf.need_to_delete = True
             t_session.remove_torrent(active_torr)
             tf.seeding = False
-        if tf.become_inactive < get_now(-hard_timeout):
+        if tf.become_inactive < get_now(-int(config['torrent_hard timeout'])):
             logger.info("Hard timeout for inactive torrent '{}' for '{}'. Files will be deleted.".format(tf.basename, tf.tarball))
             tf.need_to_delete = True
             t_session.remove_torrent(active_torr)
@@ -594,7 +578,7 @@ def daemonize():
     # write pidfile
     atexit.register(exit_handler)
     pid = str(os.getpid())
-    f = open(pidfile, "w+")
+    f = open(config['ltorrent_pidfile'], "w+")
     f.write("%s\n" % pid)
     f.close()
 
@@ -614,12 +598,13 @@ def start():
         pf.close()
     except IOError:
         pid = None
-    user_id = pwd.getpwnam(runas_user)
+
+    user_id = pwd.getpwnam(config['user'])
     os.setgid(user_id.pw_gid)
     os.setuid(user_id.pw_uid)
     if pid:
         message = "pidfile %s already exist. Daemon already running?\n"
-        sys.stderr.write(message % pidfile)
+        sys.stderr.write(message % config['ltorrent_pidfile'])
         sys.exit(1)
 
     # Start the daemon
@@ -632,15 +617,15 @@ def start():
     except:
         logger.error(traceback.format_exc())
 
+
 def stop():
     """
     Stop the daemon
     """
-    global pidfile
     # Get the pid from the pidfile
     logger.info("Stopping Luna Torrent")
     try:
-        pf = file(pidfile,'r')
+        pf = file(config['ltorrent_pidfile'], 'r')
         pid = int(pf.read().strip())
         pf.close()
     except IOError:
@@ -648,7 +633,7 @@ def stop():
 
     if not pid:
         message = "pidfile %s does not exist. Daemon not running?\n"
-        logger.error(message % pidfile)
+        logger.error(message % config['ltorrent_pidfile'])
         return # not an error in a restart
 
     # Try killing the daemon process
@@ -659,20 +644,20 @@ def stop():
     except OSError, err:
         err = str(err)
         if err.find("No such process") > 0:
-            if os.path.exists(pidfile):
-                os.remove(pidfile)
+            if os.path.exists(config['ltorrent_pidfile']):
+                os.remove(config['ltorrent_pidfile'])
         else:
             logger.error(err)
             sys.exit(1)
+
 
 def lreload():
     """
     Reload the daemon
     """
-    global pidfile
     # Get the pid from the pidfile
     try:
-        pf = file(pidfile,'r')
+        pf = file(config['ltorrent_pidfile'], 'r')
         pid = int(pf.read().strip())
         pf.close()
     except IOError:
@@ -680,7 +665,7 @@ def lreload():
 
     if not pid:
         message = "pidfile %s does not exist. Daemon not running?\n"
-        logger.error(message % pidfile)
+        logger.error(message % config['ltorrent_pidfile'])
         sys.exit(1)
 
     # Try reload the daemon proces
@@ -689,11 +674,12 @@ def lreload():
     except OSError, err:
         err = str(err)
         if err.find("No such process") > 0:
-            if os.path.exists(pidfile):
-                os.remove(pidfile)
+            if os.path.exists(config['ltorrent_pidfile']):
+                os.remove(config['ltorrent_pidfile'])
         else:
             logger.error(err)
             sys.exit(1)
+
 
 def restart():
     """
@@ -702,37 +688,22 @@ def restart():
     stop()
     start()
 
+
 def exit_handler():
-    global pidfile
-    os.remove(pidfile)
+    os.remove(config['ltorrent_pidfile'])
+
 
 if __name__ == '__main__':
     logger = logging.getLogger('ltorrent')
     signal.signal(signal.SIGHUP, sighup_handler)
-    while True:
-        try:
-            cluster = luna.Cluster()
-        except:
-            logger.error('Cannot find cluster definition in MongoDB.')
-            time.sleep(5)
-            continue
-        break
-    runas_user = cluster.get('user')
-    if not bool(runas_user):
-        runas_user = 'luna'
-    #runas_group = cluster.get('group')
-    #if not bool(runas_group):
-    #    runas_group = 'luna'
-    pidfile = cluster.get('torrent_pidfile')
-    if not bool(pidfile):
-        pidfile = '/run/luna/ltorrent.pid'
-    soft_timeout = cluster.get('torrent_soft_timeout') or 600
-    hard_timeout = cluster.get('torrent_hard_timeout') or 3600
-    torrents_path = cluster.get('path')
-    if not bool(torrents_path):
-        torrents_path = '/opt/luna'
-    torrents_path = torrents_path + "/torrents"
-    daemon = True
+
+    torrents_path = config['path'] + "/torrents"
+
+    try:
+        daemon = bool(int(os.environ['DAEMON']))
+    except KeyError:
+        daemon = True
+
     if len(sys.argv) == 2:
         if 'start' == sys.argv[1]:
             start()
@@ -746,6 +717,7 @@ if __name__ == '__main__':
             logger.error("Unknown command")
             sys.exit(2)
         sys.exit(0)
+
     else:
             logger.error("usage: %s start|stop|restart|reload" % sys.argv[0])
             sys.exit(2)

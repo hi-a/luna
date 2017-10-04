@@ -54,7 +54,7 @@ class Cluster(Base):
     _json = None
 
     def __init__(self, mongo_db=None, create=False, id=None,
-                 nodeprefix='node', nodedigits=3, path=None, user=None):
+                 nodeprefix='node', nodedigits=3):
         """
         Constructor can be used for creating object by setting create=True
         nodeprefix='node' and nodedigits='3' will give names like node001,
@@ -66,30 +66,14 @@ class Cluster(Base):
         self._collection_name = 'cluster'
         self._keylist = {'nodeprefix': type(''),
                          'nodedigits': type(0),
-                         'debug': type(0),
-                         'user': type(''),
-                         'path': type(''),
-                         'frontend_address': type(''),
-                         'frontend_port': type(0),
-                         'server_port': type(0),
-                         'tracker_interval': type(0),
-                         'tracker_min_interval': type(0),
-                         'tracker_maxpeers': type(0),
-                         'torrent_listen_port_min': type(0),
-                         'torrent_listen_port_max': type(0),
-                         'torrent_pidfile': type(''),
-                         'lweb_pidfile': type(''),
-                         'lweb_num_proc': type(0),
                          'cluster_ips': type(''),
-                         'named_include_file': type(''),
-                         'named_zone_dir': type(''),
                          'dhcp_range_start': long,
                          'dhcp_range_end': long,
                          'dhcp_net': type(''),
-                         'comment': type(''),
-                         'frontend_https': type(True)}
+                         'comment': type('')}
 
         cluster = self._get_object('general', mongo_db, create, id)
+        config = utils.helpers.load_configuration()['cluster']
 
         if cluster and cluster.get('db_version') != db_version:
             err_msg = "DB version mismatch. Expecting {}".format(db_version)
@@ -97,19 +81,15 @@ class Cluster(Base):
             raise RuntimeError, err_msg
 
         if create:
-            try:
-                path = os.path.abspath(path)
-            except:
-                err_msg = "No path specified."
-                self._logger.error(err_msg)
-                raise RuntimeError, err_msg
+            path = os.path.abspath(config['path'])
             if not os.path.exists(path):
-                err_msg = "Wrong path '{}' specified.".format(path)
+                err_msg = "Specified path '{}' does not exist.".format(path)
                 self._logger.error(err_msg)
                 raise RuntimeError, err_msg
 
             try:
-                user_id = pwd.getpwnam(user)
+                user = config['user']
+                user_id = pwd.getpwnam(config['user'])
             except KeyError:
                 err_msg = "No such user '{}' exists.".format(user)
                 self.log.error(err_msg)
@@ -135,28 +115,12 @@ class Cluster(Base):
             cluster = {'name': 'general',
                        'nodeprefix': nodeprefix,
                        'nodedigits': nodedigits,
-                       'user': user, 'debug': 0,
-                       'path': path,
                        'cluster_ips': None,
-                       'frontend_address': '',
-                       'frontend_port': '7050',
-                       'server_port': 7051,
-                       'torrent_listen_port_min': 7052,
-                       'torrent_listen_port_max': 7200,
-                       'torrent_pidfile': '/run/luna/ltorrent.pid',
-                       'tracker_interval': 10,
-                       'tracker_min_interval': 5,
-                       'tracker_maxpeers': 200,
-                       'lweb_num_proc': 0,
-                       'lweb_pidfile': '/run/luna/lweb.pid',
-                       'named_include_file': '/etc/named.luna.zones',
-                       'named_zone_dir': '/var/named',
                        'dhcp_range_start': None,
                        'dhcp_range_end': None,
                        'dhcp_net': None,
                        'db_version': db_version,
-                       'comment': None,
-                       'frontend_https': False,
+                       'comment': None
                        }
 
             self.log.debug("Saving cluster '{}' to the datastore"
@@ -178,6 +142,8 @@ class Cluster(Base):
                     raise
 
             os.chown(logdir, user_id.pw_uid, group_id.gr_gid)
+
+        self._json = dict(cluster.items() + config.items())
 
     def get(self, key):
         from luna.network import Network

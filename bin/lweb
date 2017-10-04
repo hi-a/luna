@@ -3,46 +3,40 @@
 Written by Dmitry Chirikov <dmitry@chirikov.ru>
 This file is part of Luna, cluster provisioning tool
 https://github.com/dchirikov/luna
-
 This file is part of Luna.
-
 Luna is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-
 Luna is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-
 You should have received a copy of the GNU General Public License
 along with Luna.  If not, see <http://www.gnu.org/licenses/>.
-
 '''
 
-import argparse
-import logging
-import logging.handlers
-import sys
-import pymongo
-import signal
-import time
 import os
 import pwd
+import sys
+import time
+import signal
+import logging
+import argparse
+import traceback
+
+import pymongo
 import tornado
-import tornado.ioloop
 import tornado.web
+import tornado.ioloop
 import tornado.options
 import tornado.httpserver
 import tornado.process
-import traceback
 
-#from libtorrent import bencode
-import luna
-from luna import MacUpdater
 from luna import utils
+from luna import MacUpdater, AnnounceHandler, ScrapeHandler, Manager
 from luna.config import db_name
+
 
 try:
     log_dir = os.environ['LUNA_LOGDIR']
@@ -94,27 +88,37 @@ class LWeb(object):
 
         # start mackupdater in forked process
         tornado.options.parse_command_line()
-        luna_opts = luna.Cluster()
-        port = luna_opts.get('frontend_port') or 7050
-        lweb_port = luna_opts.get('server_port') or 7051
-        server_ip = luna_opts.get('frontend_address')
-        if luna_opts.get('frontend_https'):
+
+        if 'frontend_address' not in self.luna_opts:
+            self.logger.error('frontend_address needs to be configured!')
+            return None
+
+        if self.luna_opts['frontend_https']:
             protocol = 'https'
         else:
             protocol = 'http'
-        path = luna_opts.get('path')
-        num_proc = int(luna_opts.get('lweb_num_proc')) or 0
-        if not bool(server_ip):
-            self.logger.error('Server IP needs to be configured')
-            return None
+
+        port = self.luna_opts['frontend_port'] or 7050
+        lweb_port = self.luna_opts['server_port'] or 7051
+        server_ip = self.luna_opts['frontend_address']
+
+        path = self.luna_opts['path']
+        num_proc = int(self.luna_opts['lweb_num_proc']) or 0
+
+        manager_params = {}
+        manager_params['protocol'] = protocol
+        manager_params['server_ip'] = server_ip
+        manager_params['server_port'] = port
+        manager_params['app_logger'] = self.logger
+        manager_params['mongo_db'] = mongo_db
 
         try:
-            #mongo_db =  motor.motor_tornado.MotorClient()[db_name]
             conn_options = utils.helpers.get_con_options()
             mongo_db = pymongo.MongoClient(**conn_options)[db_name]
         except:
             self.logger.error("Unable to connect to MongoDB.")
             raise RuntimeError
+
         try:
             mongo_db['tracker'].create_index(
                 "updated", expireAfterSeconds=3600)
@@ -133,30 +137,17 @@ class LWeb(object):
             "MacUpdater was started. PID = {}".format(self.macupdater_pid))
 
         tracker_params = {}
-        tracker_params['luna_tracker_interval'] = luna_opts.get(
-            'tracker_interval') or 30
-        tracker_params['luna_tracker_min_interval'] = luna_opts.get(
-            'tracker_min_interval') or 20
-        tracker_params['luna_tracker_maxpeers'] = luna_opts.get(
-            'tracker_maxpeers') or 200
+        tracker_params['luna_tracker_interval'] = self.luna_opts['tracker_interval'] or 30
+        tracker_params['luna_tracker_min_interval'] = self.luna_opts['tracker_min_interval'] or 20
+        tracker_params['luna_tracker_maxpeers'] = self.luna_opts['tracker_maxpeers'] or 200
         tracker_params['mongo_db'] = mongo_db
-
-        manager_params = {}
-        manager_params['protocol'] = protocol
-        manager_params['server_ip'] = server_ip
-        manager_params['server_port'] = port
-        manager_params['app_logger'] = self.logger
-        manager_params['mongo_db'] = mongo_db
 
         template_path = path + '/templates'
 
         lweb = tornado.web.Application([
-            (r"/announce.*",
-                luna.AnnounceHandler, dict(params=tracker_params)),
-            (r"/scrape.*",
-                luna.ScrapeHandler, dict(params=tracker_params)),
-            (r"/luna.*",
-                luna.Manager, dict(params=manager_params)),
+            (r"/announce.*", AnnounceHandler, dict(params=tracker_params)),
+            (r"/scrape.*", ScrapeHandler, dict(params=tracker_params)),
+            (r"/luna.*", Manager, dict(params=manager_params)),
         ], template_path=template_path, xheaders=True)
         self.logger.info('Starting lweb on port %d' % lweb_port)
 
@@ -411,20 +402,17 @@ class LWeb(object):
         self.start(args)
 
     def run(self):
-        while True:
-            try:
-                cluster = luna.Cluster()
-            except:
-                self.logger.error('Cannot find cluster definition in MongoDB.')
-                time.sleep(5)
-                continue
-            break
-        self.runas_user = cluster.get('user')
-        if not bool(self.runas_user):
+        self.luna_opts = utils.helpers.load_configuration()['cluster']
+
+        if 'user' not in self.luna_opts:
             self.runas_user = 'luna'
-        self.pidfile = cluster.get('lweb_pidfile')
-        if not bool(self.pidfile):
+        else:
+            self.runas_user = self.luna_opts['user']
+
+        if 'lweb_pidfile' not in self.luna_opts:
             self.pidfile = '/run/luna/lweb.pid'
+        else:
+            self.pidfile = self.luna_opts['lweb_pidfile']
 
         parser = self.parser.parse_args()
         parser.run(parser)
