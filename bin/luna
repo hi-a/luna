@@ -1551,7 +1551,7 @@ cmd.add_argument('--end_ip', '-e',
 cmd = cluster_a.add_parser('delete', help='Delete Luna Cluster')
 cmd.add_argument('--force', action='store_true', help='Drop backend database.')
 
-# lmistmacs
+# listmacs
 cmd = cluster_a.add_parser('listmacs', help='List cached mac addresses.')
 
 #
