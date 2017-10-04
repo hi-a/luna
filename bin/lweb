@@ -175,12 +175,13 @@ def daemonize():
     http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
     """
 
-    log_app_handler = logging.handlers.RotatingFileHandler( log_dir + '/lweb.log', maxBytes = 1073741824, backupCount = 5)
-    #log_app_handler.doRollover()
+    log_handler = logging.handlers.RotatingFileHandler(log_dir + '/lweb.log',
+                                                       maxBytes=1073741824,
+                                                       backupCount=5)
     logger.propagate = False
     formatter = logging.Formatter("%(asctime)s\t%(levelname)s\t%(message)s")
-    log_app_handler.setFormatter(formatter)
-    logger.addHandler(log_app_handler)
+    log_handler.setFormatter(formatter)
+    logger.addHandler(log_handler)
 
     if tornado.version_info[0] > 3:
         tornado.options.options.log_to_stderr = False

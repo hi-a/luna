@@ -60,42 +60,40 @@ flag_super_seeding = 1024
 flag_sequential_download = 2048
 flag_use_resume_save_path = 4096
 
-
-
 torrents = {}
 t_session = None
 
 
-#def setup_logging(debug=False):
-#    if debug:
-#        level = logging.DEBUG
-#    else:
-#        level = logging.INFO
+def get_now(shift=0):
+    return datetime.datetime.utcnow() + datetime.timedelta(seconds=shift)
 
-
-def get_now(shift = 0):
-    return datetime.datetime.utcnow() + datetime.timedelta(seconds = shift)
 
 class LunaTorrentFile(object):
-    def __init__(self, torrent_file = None):
+
+    def __init__(self, torrent_file=None):
         if not bool(torrent_file):
             logger.error("Torrent file should be specified.")
             raise RuntimeError
+
         if not os.path.exists(torrent_file):
             logger.error("Cannot open '{}'.".format(torrent_file))
             raise RuntimeError
+
         try:
             self.torrent_file_info = lt.torrent_info(torrent_file)
         except:
             logger.error("File '{}' is not a torrent file.".format(torrent_file))
             raise RuntimeError
+
         if self.torrent_file_info.creator() != luna.torrent_key:
             logger.error("File '{}' does not belong to Luna.".format(torrent_file))
             raise RuntimeError
+
         files_present = self.torrent_file_info.num_files()
         if files_present != 1:
             logger.error("Torrent '{}' contains wrong numer of files: {}.".format(torrent_file, files_present))
             raise RuntimeError
+
         self._info = self.torrent_file_info
         self._info_hash = self._info.info_hash()
         self._path = os.path.abspath(torrent_file)
@@ -105,9 +103,11 @@ class LunaTorrentFile(object):
         self._id = self._info.comment()
         self._active = self.update_status()
         self._dirname = os.path.dirname(self._path)
+
         if not os.path.exists(self._dirname + "/" + self._tarball):
             logger.error("Cannot find tarball '{}' for torrent '{}'.".format(self._dirname + "/" + self._tarball, torrent_file))
             raise RuntimeError
+
         self._timestamp = get_now()
         self._need_to_delete = False
         self._duplicate = False
@@ -116,74 +116,93 @@ class LunaTorrentFile(object):
 
     def __repr__(self):
         return str({'id': self._id,
-                'tarball_id': self._tarball_id,
-                'tarball': self._tarball,
-                'info_hash': str(self._info_hash),
-                'path': self._path,
-                'basename': self._basename,
-                'info': self._info,
-                'active': self._active,
-                'need_to_delete': self._need_to_delete,
-                'accessed': self._timestamp,
-                'duplicate': self._duplicate,
-                'uploaded': self._uploaded,
-                'become_inactive': self._become_inactive,
-                'seeding': self._seeding
-            })
+                    'tarball_id': self._tarball_id,
+                    'tarball': self._tarball,
+                    'info_hash': str(self._info_hash),
+                    'path': self._path,
+                    'basename': self._basename,
+                    'info': self._info,
+                    'active': self._active,
+                    'need_to_delete': self._need_to_delete,
+                    'accessed': self._timestamp,
+                    'duplicate': self._duplicate,
+                    'uploaded': self._uploaded,
+                    'become_inactive': self._become_inactive,
+                    'seeding': self._seeding
+                   })
+
     @property
     def info_hash(self):
         return self._info_hash
+
     @property
     def info(self):
         return self._info
+
     @property
     def active(self):
         return self._active
+
     @active.setter
     def active(self, flag):
         self._active = flag
+
     @property
     def need_to_delete(self):
         return self._need_to_delete
+
     @need_to_delete.setter
     def need_to_delete(self, flag):
         self._need_to_delete = flag
+
     @property
     def duplicate(self):
         return self._duplicate
+
     @duplicate.setter
     def duplicate(self, flag):
         self._duplicate = flag
+
     @property
     def id(self):
         return self._id
+
     @property
     def path(self):
         return self._path
+
     @property
     def basename(self):
         return self._basename
+
     @property
     def tarball(self):
         return self._tarball
+
     @property
     def tarball_id(self):
         return self._tarball_id
+
     @property
     def uploaded(self):
         return self._uploaded
+
     @uploaded.setter
     def uploaded(self, val):
         self._uploaded = val
+
     @property
     def become_inactive(self):
         return self._become_inactive
+
     @become_inactive.setter
     def become_inactive(self, val):
         self._become_inactive = val
+
     @property
     def seeding(self):
         return self._seeding
+
     @seeding.setter
     def seeding(self, flag):
         self._seeding = flag
@@ -193,6 +212,7 @@ class LunaTorrentFile(object):
             return self._timestamp
         self._timestamp = get_now()
         return self._timestamp
+
     def update_status(self):
         osimages = luna.list('osimage')
         for osimage_name in osimages:
@@ -204,6 +224,7 @@ class LunaTorrentFile(object):
         self._active = False
         self._become_inactive = get_now()
         return self._active
+
 
 def get_luna_torrents():
     osimage_names = luna.list('osimage')
@@ -395,6 +416,7 @@ def update_torrent_client():
         t_session.async_add_torrent(parm_dict)
         torrents[tf].seeding = True
 
+
 def get_lt_alerts():
     global t_session
     if not bool(t_session):
@@ -404,16 +426,14 @@ def get_lt_alerts():
         logger.info("Libtorrent alert: '{}'".format(str(alert)))
         alert = t_session.pop_alert()
 
+
 def run():
     while True:
         remove_files()
         get_lt_alerts()
         update_inactive_torrents()
-        #update_torrents()
-        #update_torrent_client()
-        #for i in torrents:
-            #print torrents[i].basename, torrents[i].seeding, torrents[i].need_to_delete, '---', str(torrents[i].become_inactive), '---', str(torrents[i].accessed())
         time.sleep(5)
+
 
 def update_inactive_torrents():
     global t_session
@@ -453,7 +473,6 @@ def remove_files():
         if not bool(path):
             return None
         try:
-            #shutil.move(path, path + ".del")
             os.remove(path)
         except:
             logger.error("Cannot remove '{}'".format(path))
@@ -476,26 +495,24 @@ def remove_files():
             rm(tarball_path)
             torrents.pop(uid)
 
+
 def sighup_handler(sig, frame):
     logger.info("Re-reading torrent files")
     update_torrents()
     if not bool(t_session):
         start_torrent_client()
     update_torrent_client()
-    #update_inactive_torrents()
-    #update_torrent_client()
 
 
 def daemonize():
-    global pidfile
     """
     do the UNIX double-fork magic, see Stevens' "Advanced
     Programming in the UNIX Environment" for details (ISBN 0201563177)
     http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
     """
-    #handler = logging.handlers.SysLogHandler(address='/dev/log', facility='daemon')
-    log_handler = logging.handlers.RotatingFileHandler( log_dir + '/ltorrent.log', maxBytes = 1073741824, backupCount = 5)
-    #log_handler.doRollover()
+    log_handler = logging.handlers.RotatingFileHandler(log_dir + '/ltorrent.log',
+                                                       maxBytes=1073741824,
+                                                       backupCount=5)
     logger.propagate = False
     formatter = logging.Formatter("%(asctime)s\t%(levelname)s\t%(message)s")
     log_handler.setFormatter(formatter)
@@ -504,6 +521,7 @@ def daemonize():
     stdout = '/dev/null'
     stderr = '/dev/null'
     logger.info("Starting Luna Torrent as daemon")
+
     try:
         pid = os.fork()
         if pid > 0:
@@ -575,6 +593,7 @@ def start():
     # Start the daemon
     if daemon:
         daemonize()
+
     try:
         update_torrents()
         start_torrent_client()
