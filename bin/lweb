@@ -21,40 +21,39 @@ along with Luna.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
 
-import logging
-import logging.handlers
-import sys
-import pymongo
-import signal
-import time
 import os
-import fcntl
+import sys
 import pwd
-import inspect
-import atexit
+import time
+import fcntl
+import signal
+import traceback
+import logging
+
+import pymongo
 import tornado
 import tornado.ioloop
 import tornado.web
 import tornado.options
 import tornado.httpserver
-import tornado.process
 
-#from libtorrent import bencode
-import luna
-from luna import MacUpdater
 from luna import utils
+from luna import MacUpdater, AnnounceHandler, ScrapeHandler, Manager
 
-db_name = 'luna'
+
 try:
     log_dir = os.environ['LUNA_LOGDIR']
 except KeyError:
     log_dir = '/var/log/luna'
+
+config = utils.helpers.load_configuration()['cluster']
+
+db_name = 'luna'
+logger = None
 starter_pid = None
 http_server = None
-logger = None
 pipein, pipeout = None, None
 macupdater = None
-
 
 
 def lweb_main():
@@ -69,60 +68,67 @@ def run_app():
     global starter_pid, http_server, macupdater
 
     tornado.options.parse_command_line()
-    luna_opts = luna.Cluster()
-    port = luna_opts.get('frontend_port') or 7050
-    lweb_port = luna_opts.get('server_port') or 7051
-    server_ip = luna_opts.get('frontend_address')
-    if luna_opts.get('frontend_https'):
+
+    if config['frontend_https']:
         protocol = 'https'
     else:
         protocol = 'http'
-    path = luna_opts.get('path')
-    num_proc = luna_opts.get('lweb_num_proc') or 0
-    if not bool(server_ip):
-        logger.error('Server IP needs to be configured')
+
+    if 'frontend_address' not in config:
+        logger.error('frontend_address needs to be configured!')
         return None
-    tracker_params = {}
-    tracker_params['luna_tracker_interval'] = luna_opts.get('tracker_interval') or 30
-    tracker_params['luna_tracker_min_interval'] = luna_opts.get('tracker_min_interval') or 20
-    tracker_params['luna_tracker_maxpeers'] = luna_opts.get('tracker_maxpeers') or 200
+
     manager_params = {}
     manager_params['protocol'] = protocol
-    manager_params['server_ip'] = server_ip
-    manager_params['server_port'] = port
+    manager_params['server_ip'] = config['frontend_address']
+    manager_params['server_port'] = config['frontend_port']
     manager_params['app_logger'] = logger
-    template_path = path + '/templates'
+
+    tracker_params = {}
+    tracker_params['tracker_interval'] = config['tracker_interval']
+    tracker_params['tracker_min_interval'] = config['tracker_min_interval']
+    tracker_params['tracker_maxpeers'] = config['tracker_maxpeers']
+
+    template_path = config['path'] + '/templates'
+
     lweb = tornado.web.Application([
-        (r"/announce.*", luna.AnnounceHandler, dict(params=tracker_params)),
-        (r"/scrape.*", luna.ScrapeHandler, dict(params=tracker_params)),
-        (r"/luna.*", luna.Manager, dict(params=manager_params)),
-    ], template_path = template_path, xheaders=True)
-    logger.info('Starting lweb on port %d' % lweb_port)
+        (r"/announce.*", AnnounceHandler, dict(params=tracker_params)),
+        (r"/scrape.*", ScrapeHandler, dict(params=tracker_params)),
+        (r"/luna.*", Manager, dict(params=manager_params)),
+    ], template_path=template_path, xheaders=True)
+
+    logger.info('Starting lweb on port %s' % config['lweb_port'])
+
+    conn_options = utils.helpers.get_con_options()
+    while True:
+        try:
+            db = pymongo.MongoClient(**conn_options)[db_name]
+        except:
+            logger.error("Unable to connect to MongoDB. Retrying ...")
+            time.sleep(10)
+            continue
+        break
+
     try:
-        #mongo_db =  motor.motor_tornado.MotorClient()[db_name]
-        conn_options = utils.helpers.get_con_options()
-        mongo_db = pymongo.MongoClient(**conn_options)[db_name]
-    except:
-        logger.error("Unable to connect to MongoDB.")
-        raise RuntimeError
-    try:
-        mongo_db['tracker'].create_index("updated", expireAfterSeconds = 3600 )
+        db['tracker'].create_index("updated", expireAfterSeconds=3600)
     except:
         pass
-    macupdater = MacUpdater(mongo_db, logger = logger, interval = 30)
-    http_server = tornado.httpserver.HTTPServer(lweb)
-    http_server.bind(lweb_port, address='127.0.0.1')
-    starter_pid = os.getpid()
 
-    http_server.start(num_proc)
+    macupdater = MacUpdater(db, logger=logger, interval=30)
+    http_server = tornado.httpserver.HTTPServer(lweb)
+    http_server.bind(config['lweb_port'], address='127.0.0.1')
+    http_server.start(int(config['lweb_workers']))
+
+    starter_pid = os.getpid()
     child_pid = os.getpid()
     if starter_pid != child_pid:
         os.close(pipein)
         os.write(pipeout, str(child_pid) + "\n")
-    tracker_params['mongo_db'] = mongo_db
-    manager_params['mongo_db'] = mongo_db
+
+    tracker_params['mongo_db'] = db
+    manager_params['mongo_db'] = db
     tornado.ioloop.IOLoop.instance().start()
-    #tornado.ioloop.IOLoop.instance().start()
+
 
 def tornado_stop():
     global http_server
@@ -143,7 +149,6 @@ def tornado_stop():
 
 def sigterm_handler(sig, frame):
     global pipein, starter_pid, macupdater
-
 
     if os.getpid() == starter_pid:
         f_pipein = os.fdopen(os.dup(pipein))
@@ -255,12 +260,11 @@ def daemonize():
     os.dup2(se.fileno(), sys.stderr.fileno())
 
     # write pidfile
-    #atexit.register(exit_handler)
     pid = str(os.getpid())
 
     logger.info("lweb pid: '{}'".format(pid))
-    logger.info("lweb pidfile: '{}'".format(pidfile))
-    f = open(pidfile, "w+")
+    logger.info("lweb pidfile: '{}'".format(config['lweb_pidfile']))
+    f = open(config['lweb_pidfile'], "w+")
     f.write("%s\n" % pid)
     f.close()
 
@@ -281,12 +285,13 @@ def start():
         pf.close()
     except IOError:
         pid = None
-    user_id = pwd.getpwnam(runas_user)
+
+    user_id = pwd.getpwnam(config['user'])
     os.setgid(user_id.pw_gid)
     os.setuid(user_id.pw_uid)
     if pid:
         message = "pidfile %s already exist. Daemon already running?\n"
-        sys.stderr.write(message % pidfile)
+        sys.stderr.write(message % config['lweb_pidfile'])
         sys.exit(1)
 
     # Start the daemon
@@ -297,8 +302,8 @@ def start():
         signal.signal(signal.SIGTERM, sigterm_handler)
         try:
             run_app()
-        except:
-            logger.error(traceback.format_exc())
+        except Exception as e:
+            logger.error(traceback.format_exc(e))
     else:
         try:
             run_app()
@@ -307,31 +312,14 @@ def start():
             sys.exit(0)
 
 
-"""
-if __name__ == '__main__':
-
-    logger = logging.getLogger('lweb')
-
-    try:
-    except KeyboardInterrupt:
-        logger.info('Tracker Stopped.')
-        sys.exit(0)
-    except Exception as ex:
-        logger.fatal('%s' % str(ex))
-        sys.exit(-1)
-"""
-
-
-
 def stop():
     """
     Stop the daemon
     """
-    global pidfile
     # Get the pid from the pidfile
     logger.info("Stopping lweb")
     try:
-        pf = file(pidfile,'r')
+        pf = file(config['lweb_pidfile'], 'r')
         pid = int(pf.read().strip())
         pf.close()
     except IOError:
@@ -339,8 +327,8 @@ def stop():
 
     if not pid:
         message = "pidfile %s does not exist. Daemon not running?\n"
-        logger.error(message % pidfile)
-        return # not an error in a restart
+        logger.error(message % config['lweb_pidfile'])
+        return  # not an error in a restart
 
     # Try killing the daemon process
     try:
@@ -350,11 +338,12 @@ def stop():
     except OSError, err:
         err = str(err)
         if err.find("No such process") > 0:
-            if os.path.exists(pidfile):
-                os.remove(pidfile)
+            if os.path.exists(config['lweb_pidfile']):
+                os.remove(config['lweb_pidfile'])
         else:
             logger.error(err)
             sys.exit(1)
+
 
 def restart():
     """
@@ -362,6 +351,7 @@ def restart():
     """
     stop()
     start()
+
 
 if __name__ == '__main__':
     logger = logging.getLogger('lweb')
@@ -372,20 +362,7 @@ if __name__ == '__main__':
         tornado.options.options['log_to_stderr'].set(False)
 
     tornado.options.options.log_to_stderr = True
-    while True:
-        try:
-            cluster = luna.Cluster()
-        except:
-            logger.error('Cannot find cluster definition in MongoDB.')
-            time.sleep(5)
-            continue
-        break
-    runas_user = cluster.get('user')
-    if not bool(runas_user):
-        runas_user = 'luna'
-    pidfile = cluster.get('lweb_pidfile')
-    if not bool(pidfile):
-        pidfile = '/run/luna/lweb.pid'
+
     try:
         daemon = bool(int(os.environ['LWEB_DAEMON']))
     except KeyError:
@@ -400,9 +377,10 @@ if __name__ == '__main__':
         else:
             logger.error("Unknown command")
             sys.exit(2)
+
+        logger.info("Exiting lweb")
         sys.exit(0)
+
     else:
         logger.error("usage: %s start|stop|restart|reload" % sys.argv[0])
         sys.exit(2)
-
-

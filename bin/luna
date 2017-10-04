@@ -124,8 +124,6 @@ def cluster_init(**args):
         create=True,
         nodeprefix=args['nodeprefix'],
         nodedigits=args['nodedigits'],
-        path=args['path'],
-        user=args['user']
     )
 
     if not cluster:
@@ -157,11 +155,6 @@ def cluster_change(**args):
     for key in args:
         if args[key] is None:
             continue
-        if key == 'frontend_https':
-            if args[key] in ['yes', 'y']:
-                args[key] = True
-            else:
-                args[key] = False
         res = cluster.set(key, args[key])
         if not bool(res):
             log.error('Error changing {}'.format(key))
@@ -1524,43 +1517,19 @@ cmd.add_argument('--comment', '-C', action='store_true', help='Print comment')
 
 # init
 cmd = cluster_a.add_parser('init', help='Create Luna Cluster')
-cmd.add_argument('--frontend_address', required=True,
-                 help='Address of the controller\'s provisioning interface')
 cmd.add_argument('--nodeprefix', default='node', help='Prefix for new nodes')
 cmd.add_argument('--nodedigits', type=int, default=3, help='Zero-autopadding')
-cmd.add_argument('--user', default='luna', help='Username to run services as')
-cmd.add_argument('--path', default='/opt/luna', help='Path to store files')
 
 # change
 cmd = cluster_a.add_parser('change', help='Change cluster options')
 cmd.add_argument('--nodeprefix', '-p', help='Prefix for new nodes')
 cmd.add_argument('--nodedigits', '-d', type=int, help='Zero-autopadding')
-cmd.add_argument('--path', help='Path to store files')
-cmd.add_argument('--user', help='Username for running services')
-cmd.add_argument('--frontend_address',
-                 help='Address of the controller\'s provisioning interface')
-cmd.add_argument('--frontend_port', type=int, help='Server address')
-cmd.add_argument('--frontend_https', choices=['y', 'yes', 'n', 'no'],
-                 help='Is frontend server using HTTPS')
-cmd.add_argument('--server_port', type=int, help='Server port')
-cmd.add_argument('--tracker_interval', type=int,
-                 help='Torrent tracker announce interval')
-cmd.add_argument('--tracker_min_interval', type=int,
-                 help='Torrent tracker announce min interval')
-cmd.add_argument('--tracker_maxpeers', type=int,
-                 help='Torrent tracker max allowed peers')
-cmd.add_argument('--torrent_listen_port_min', type=int,
-                 help='Torrent client listening port min')
-cmd.add_argument('--torrent_listen_port_max', type=int,
-                 help='Torrent client listening port max')
-cmd.add_argument('--torrent_pidfile', help='Torrent pidfile')
-cmd.add_argument('--lweb_num_proc', type=int,
-                 help='Lweb number of processes. (0 for autodetection.)')
-cmd.add_argument('--lweb_pidfile', type=int, help='Lweb pidfile')
 cmd.add_argument('--cluster_ips', metavar='A.A.A.A,B.B.B.B',
                  help='IPs of the interfaces dedicated to provisioninig')
-cmd.add_argument('--named_include_file', help='Include file for named.conf')
-cmd.add_argument('--named_zone_dir', help='Dir where to store bind zone files')
+#cmd.add_argument('--tracker_address', help='Torrent tracker address')
+#cmd.add_argument('--tracker_port', type=int, help='Torrent tracker port')
+#cmd.add_argument('--tracker_clean', action='store_true',
+#                 help='Clean database from outdated records')
 cmd.add_argument('--comment', '-C', action='store_true', help='Add comment')
 
 # sync
