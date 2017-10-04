@@ -338,9 +338,10 @@ if __name__ == '__main__':
     tornado.options.options.log_to_stderr = True
 
     try:
-        daemon = bool(int(os.environ['LWEB_DAEMON']))
+        daemon = bool(int(os.environ['DAEMON']))
     except KeyError:
         daemon = True
+
     if len(sys.argv) == 2:
         if 'start' == sys.argv[1]:
             start()
