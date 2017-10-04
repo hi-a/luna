@@ -218,46 +218,6 @@ def get_luna_torrents():
         luna_torrents[torr_uid]['tarball_id'] = tgz_id
     return luna_torrents
 
-"""
-def check_path(path):
-    if not os.path.exists(path):
-        logger.error("Path '{}' does not exist.".format(path))
-        raise RuntimeError
-    if not runas_user:
-        logger.error("User needs to be configured.")
-        raise RuntimeError
-    path_stat = os.stat(path)
-    if path_stat.st_uid != user_id.pw_uid or path_stat.st_gid != user_id.pw_gid:
-        logger.error("Path is not owned by '{}:{}'".format(runas_user, runas_user))
-        raise RuntimeError
-    return path
-"""
-
-def check_path(path):
-    try:
-        user_id = pwd.getpwnam(runas_user)
-    except:
-        logger.error("No such user '{}' exists.".format(runas_user))
-        raise RuntimeError
-    if os.path.exists(path):
-        path_stat = os.stat(path)
-        if path_stat.st_uid != user_id.pw_uid or path_stat.st_gid != user_id.pw_gid:
-            logger.error("Path is not owned by '{}".format(user))
-            raise RuntimeError
-        return path
-    logger.info("Path '{}' does not exist. Creating.".format(path))
-    try:
-        os.makedirs(path)
-    except:
-        logger.error("Cannot create '{}'.".format(path))
-        raise RuntimeError
-    try:
-        os.chown(path, user_id.pw_uid, user_id.pw_gid)
-    except:
-        logger.error("Cannot chown '{}' to '{}'.".format(path, user))
-        raise RuntimeError
-    return path
-
 
 def update_torrents():
     global torrents
@@ -266,7 +226,7 @@ def update_torrents():
         logger.error("Path needs to be configured")
         raise RuntimeError
     try:
-        path = check_path(path)
+        utils.helpers.check_path(path, config['user'], logger)
     except:
         logger.error("Error is occured with configured path.")
         return None
@@ -363,16 +323,19 @@ def start_torrent_client():
     global t_session
     global torrents
     global log_dir
+
     try:
-        path = check_path(torrents_path)
+        utils.helpers.check_path(torrents_path, config['user'], logger)
     except:
         logger.error("Error is occured with configured path.")
         return None
+
     try:
-        log_dir = check_path(log_dir)
+        utils.helpers.check_path(log_dir, config['user'], logger)
     except:
         logger.error("Error is occured with log_dir.")
         return None
+
     if not bool(torrents):
         logger.info("No torrents. Exiting.")
         return None
@@ -582,18 +545,19 @@ def daemonize():
     f.write("%s\n" % pid)
     f.close()
 
+
 def start():
     """
     Start the daemon
     """
-    global pidfile
-    global runas_user
 
     logger.info("Starting Luna Torrent")
+
     # Check for a pidfile to see if the daemon already runs
     try:
-        pidfile = check_path(os.path.dirname(pidfile)) + "/" + os.path.basename(pidfile)
-        pf = file(pidfile,'r')
+        utils.helpers.check_path(os.path.dirname(config['ltorrent_pidfile']),
+                                 config['user'], logger)
+        pf = file(config['ltorrent_pidfile'], 'r')
         pid = int(pf.read().strip())
         pf.close()
     except IOError:
@@ -602,6 +566,7 @@ def start():
     user_id = pwd.getpwnam(config['user'])
     os.setgid(user_id.pw_gid)
     os.setuid(user_id.pw_uid)
+
     if pid:
         message = "pidfile %s already exist. Daemon already running?\n"
         sys.stderr.write(message % config['ltorrent_pidfile'])

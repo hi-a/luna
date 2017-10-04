@@ -27,6 +27,7 @@ import ConfigParser
 import urllib
 import sys
 import os
+import pwd
 import errno
 import subprocess
 import ssl
@@ -119,6 +120,40 @@ def get_con_options():
             con_options['ssl_cert_reqs'] = ssl.CERT_NONE
 
     return con_options
+
+
+def check_path(path, user, logger):
+    if not user:
+        logger.error("User needs to be configured.")
+        raise RuntimeError
+
+    try:
+        user_id = pwd.getpwnam(user)
+    except:
+        logger.error("No such user '{}' exists.".format(user))
+        raise RuntimeError
+
+    if os.path.exists(path):
+        path_stat = os.stat(path)
+        if path_stat.st_uid != user_id.pw_uid or path_stat.st_gid != user_id.pw_gid:
+            logger.error("Path is not owned by '{}".format(user))
+            raise RuntimeError
+        return path
+
+    logger.info("Path '{}' does not exist. Creating.".format(path))
+    try:
+        os.makedirs(path)
+    except:
+        logger.error("Cannot create '{}'.".format(path))
+        raise RuntimeError
+
+    try:
+        os.chown(path, user_id.pw_uid, user_id.pw_gid)
+    except:
+        logger.error("Cannot chown '{}' to '{}'.".format(path, user))
+        raise RuntimeError
+
+    return path
 
 
 def clone_dirs(path1=None, path2=None):

@@ -167,36 +167,8 @@ def sigterm_handler(sig, frame):
     else:
         tornado_stop()
 
-def check_path(path, user):
-    if not user:
-        logger.error("User needs to be configured.")
-        raise RuntimeError
-    try:
-        user_id = pwd.getpwnam(user)
-    except:
-        logger.error("No such user '{}' exists.".format(runas_user))
-        raise RuntimeError
-    if os.path.exists(path):
-        path_stat = os.stat(path)
-        if path_stat.st_uid != user_id.pw_uid or path_stat.st_gid != user_id.pw_gid:
-            logger.error("Path is not owned by '{}".format(user))
-            raise RuntimeError
-        return path
-    logger.info("Path '{}' does not exist. Creating.".format(path))
-    try:
-        os.makedirs(path)
-    except:
-        logger.error("Cannot create '{}'.".format(path))
-        raise RuntimeError
-    try:
-        os.chown(path, user_id.pw_uid, user_id.pw_gid)
-    except:
-        logger.error("Cannot chown '{}' to '{}'.".format(path, user))
-        raise RuntimeError
-    return path
 
 def daemonize():
-    global pidfile
     """
     do the UNIX double-fork magic, see Stevens' "Advanced
     Programming in the UNIX Environment" for details (ISBN 0201563177)
@@ -273,14 +245,15 @@ def start():
     """
     Start the daemon
     """
-    global pidfile, pipein, pipeout
-    global runas_user
+    global pipein, pipeout
 
     logger.info("Starting lweb")
+
     # Check for a pidfile to see if the daemon already runs
     try:
-        pidfile = check_path(os.path.dirname(pidfile), runas_user) + '/' + os.path.basename(pidfile)
-        pf = file(pidfile,'r')
+        utils.helpers.check_path(os.path.dirname(config['lweb_pidfile']),
+                                 config['user'], logger)
+        pf = file(config['lweb_pidfile'], 'r')
         pid = int(pf.read().strip())
         pf.close()
     except IOError:
