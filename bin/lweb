@@ -307,9 +307,8 @@ class LWeb(object):
         self.logger.info("Starting lweb")
         # Check for a pidfile to see if the daemon already runs
         try:
-            self.pidfile = self.check_path(
-                os.path.dirname(self.pidfile), self.runas_user
-            ) + '/' + os.path.basename(self.pidfile)
+            utils.helpers.check_path(os.path.dirname(self.pidfile),
+                                     self.runas_user, self.logger)
             pf = file(self.pidfile, 'r')
             pid = int(pf.read().strip())
             pf.close()
