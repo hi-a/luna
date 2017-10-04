@@ -29,12 +29,7 @@ class AddNetToGroupTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(
             name='testosimage',
@@ -182,12 +177,7 @@ class DeleteIPTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(
             name='testosimage',
@@ -346,12 +336,7 @@ class GetIPTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(
             name='testosimage',
@@ -514,12 +499,7 @@ class SetIPTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(
             name='testosimage',
@@ -706,8 +686,7 @@ class ChangeGroupTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(mongo_db=self.db, create=True,
-                                    path=self.path, user=getpass.getuser())
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(name='testosimage', path=self.path,
                                     mongo_db=self.db, create=True)
@@ -1053,8 +1032,7 @@ class GetMacTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(mongo_db=self.db, create=True,
-                                    path=self.path, user=getpass.getuser())
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(name='testosimage', path=self.path,
                                     mongo_db=self.db, create=True)

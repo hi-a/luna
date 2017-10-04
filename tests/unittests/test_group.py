@@ -26,12 +26,7 @@ class GroupCreateTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(
             name='testosimage',
@@ -195,12 +190,7 @@ class GroupConfigTests(unittest.TestCase):
         self.path = self.sandbox.path
         #osimage_path = self.sandbox.create_osimage()
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.cluster.set("frontend_address", "127.0.0.1")
 
@@ -755,12 +745,7 @@ class GroupBootInstallParamsTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.cluster.set("frontend_address", "127.0.0.1")
 
@@ -823,6 +808,7 @@ class GroupBootInstallParamsTests(unittest.TestCase):
                 mock.patch('os.fchdir'), \
                 mock.patch('os.close'), \
                 mock.patch('os.chdir'), \
+                mock.patch('os.getcwd'), \
                 mock.patch('shutil.move'), \
                 mock.patch('libtorrent.add_files'), \
                 mock.patch('libtorrent.set_piece_hashes'):

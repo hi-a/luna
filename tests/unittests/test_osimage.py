@@ -16,12 +16,7 @@ class OsimageCreateTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser(),
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
     def tearDown(self):
         self.sandbox.cleanup()
@@ -169,12 +164,7 @@ class OsimageMethodsTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser(),
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(
             name='testosimage',
@@ -232,6 +222,7 @@ class OsimageMethodsTests(unittest.TestCase):
                                              mock_os_path_exists):
 
         self.osimage.set('tarball', 'UUID')
+        self.sandbox._update_luna_conf('cluster', 'frontend_address', '')
 
         self.assertFalse(self.osimage.create_torrent())
 
@@ -240,8 +231,9 @@ class OsimageMethodsTests(unittest.TestCase):
             self, mock_os_path_exists):
 
         self.osimage.set('tarball', 'UUID')
-        self.cluster.set('frontend_address', '127.0.0.1')
-        self.cluster.set('frontend_port', 0)
+        self.sandbox._update_luna_conf('cluster', 'frontend_port', 0)
+        self.sandbox._update_luna_conf('cluster',
+                                       'frontend_address', '127.0.0.1')
 
         self.assertFalse(self.osimage.create_torrent())
 
@@ -262,8 +254,10 @@ class OsimageMethodsTests(unittest.TestCase):
         self = args[0]
         args[5].return_value.stderr.readline.return_value = ''
         self.osimage.set('tarball', 'UUID')
-        self.cluster.set('frontend_address', '127.0.0.1')
-        self.cluster.set('frontend_port', 7050)
+        self.sandbox._update_luna_conf('cluster', 'frontend_port', 7050)
+        self.sandbox._update_luna_conf('cluster',
+                                       'frontend_address', '127.0.0.1')
+
         self.assertTrue(self.osimage.create_torrent())
 
     @mock.patch('os.close')

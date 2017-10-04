@@ -16,8 +16,7 @@ class NetworkCreateTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(mongo_db=self.db, create=True,
-                                    path=self.path, user=getpass.getuser())
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
     def tearDown(self):
         self.sandbox.cleanup()
@@ -104,8 +103,7 @@ class NetworkReadTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(mongo_db=self.db, create=True,
-                                    path=self.path, user=getpass.getuser())
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
     def tearDown(self):
         self.sandbox.cleanup()
@@ -130,8 +128,7 @@ class NetworkAttributesTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(mongo_db=self.db, create=True,
-                                    path=self.path, user=getpass.getuser())
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.net = luna.Network(name='test', mongo_db=self.db, create=True,
                                 NETWORK='172.16.1.0', PREFIX='24',
@@ -203,8 +200,7 @@ class NetworkAttributesTestsIPv6(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(mongo_db=self.db, create=True,
-                                    path=self.path, user=getpass.getuser())
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.net = luna.Network(name='test', mongo_db=self.db, create=True,
                                 NETWORK='fdee:172:30:128::', PREFIX=64,
@@ -309,12 +305,7 @@ class ZoneDataIPv4(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
         self.cluster.set('path', self.path)
         self.cluster.set('frontend_address', '127.0.0.1')
 
@@ -499,12 +490,7 @@ class ZoneDataIPv6(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
         self.cluster.set('path', self.path)
         self.cluster.set('frontend_address', '127.0.0.1')
 

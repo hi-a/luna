@@ -29,12 +29,7 @@ class NodeCreateTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(
             name='testosimage',
@@ -192,12 +187,7 @@ class NodeChangeTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
         self.cluster.set('path', self.path)
 
         self.osimage = luna.OsImage(
@@ -627,12 +617,7 @@ class NodeBootInstallTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
         self.cluster.set('path', self.path)
         self.cluster.set('frontend_address', '127.0.0.1')
 

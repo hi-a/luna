@@ -254,12 +254,12 @@ class OsImage(Base):
             return False
 
         tracker_address = cluster.get('frontend_address')
-        if tracker_address == '':
+        if not tracker_address:
             self.log.error("Tracker address needs to be configured.")
             return False
 
         tracker_port = cluster.get('frontend_port')
-        if tracker_port == 0:
+        if not tracker_port or tracker_port is '0':
             self.log.error("Tracker port needs to be configured.")
             return False
 

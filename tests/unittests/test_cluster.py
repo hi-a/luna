@@ -12,19 +12,22 @@ expected = {'name': 'general',
             'nodedigits': 3,
             'user': getpass.getuser(),
             'path': '',
-            'debug': 0,
+            'debug': '0',
             'cluster_ips': None,
-            'frontend_address': '',
+            'frontend_address': '127.0.0.1',
             'frontend_port': '7050',
-            'server_port': 7051,
-            'tracker_interval': 10,
-            'tracker_min_interval': 5,
-            'tracker_maxpeers': 200,
-            'torrent_listen_port_min': 7052,
-            'torrent_listen_port_max': 7200,
-            'torrent_pidfile': '/run/luna/ltorrent.pid',
+            'frontend_https': False,
+            'lweb_port': '7051',
+            'tracker_interval': '10',
+            'tracker_min_interval': '5',
+            'tracker_maxpeers': '200',
+            'torrent_listen_port_min': '7052',
+            'torrent_listen_port_max': '7200',
+            'torrent_soft_timeout': '600',
+            'torrent_hard_timeout': '3600',
+            'ltorrent_pidfile': '/run/luna/ltorrent.pid',
             'lweb_pidfile': '/run/luna/lweb.pid',
-            'lweb_num_proc': 0,
+            'lweb_workers': '0',
             'named_include_file': '/etc/named.luna.zones',
             'named_zone_dir': '/var/named',
             'dhcp_net': None,
@@ -69,15 +72,13 @@ class ClusterReadTests(unittest.TestCase):
         self.assertRaises(RuntimeError, luna.Cluster, mongo_db=self.db)
 
     def test_cluster_read(self):
-        luna.Cluster(mongo_db=self.db, create=True,
-                     path=self.path, user=getpass.getuser())
+        luna.Cluster(mongo_db=self.db, create=True)
 
         cluster = luna.Cluster(mongo_db=self.db)
-        doc = self.db['cluster'].find_one({'_id': cluster._id})
         expected['path'] = self.path
 
         for attr in expected:
-            self.assertEqual(doc[attr], expected[attr])
+            self.assertEqual(cluster._json[attr], expected[attr])
 
 
 class ClusterCreateTests(unittest.TestCase):
@@ -94,14 +95,12 @@ class ClusterCreateTests(unittest.TestCase):
         self.sandbox.cleanup()
 
     def test_init_cluster_with_defaults(self):
-        cluster = luna.Cluster(mongo_db=self.db, create=True,
-                               path=self.path, user=getpass.getuser())
+        cluster = luna.Cluster(mongo_db=self.db, create=True)
 
-        doc = self.db['cluster'].find_one({'_id': cluster._id})
         expected['path'] = self.path
 
         for attr in expected:
-            self.assertEqual(doc[attr], expected[attr])
+            self.assertEqual(cluster._json[attr], expected[attr])
 
 if __name__ == '__main__':
     unittest.main()

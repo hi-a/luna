@@ -18,8 +18,7 @@ class SwitchTestsCreate(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        cluster = luna.Cluster(mongo_db=self.db, create=True,
-                               path=self.path, user=getpass.getuser())
+        cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.network = luna.Network(mongo_db=self.db, create=True,
                                name='cluster', NETWORK='10.141.0.0',
@@ -47,8 +46,7 @@ class SwitchTestsChange(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        cluster = luna.Cluster(mongo_db=self.db, create=True,
-                               path=self.path, user=getpass.getuser())
+        cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.network = luna.Network(mongo_db=self.db, create=True,
                                name='cluster', NETWORK='10.141.0.0',
