@@ -6,6 +6,8 @@ import time
 import tempfile
 import pymongo
 import subprocess
+import ConfigParser
+import getpass
 import ming
 import uuid
 
@@ -26,19 +28,27 @@ class Sandbox(object):
         """
         if 'LUNA_TEST_DBTYPE' in os.environ:
             dbtype = os.environ['LUNA_TEST_DBTYPE']
+
+        self.user = getpass.getuser()
+
         if not path:
             self.path = tempfile.mkdtemp(prefix='luna')
         else:
             # can cause race condition, but ok
             if not os.path.exists(path):
                 os.makedirs(path)
+
             self.path = path
+
         self._dbconn = None
         self._mingdatastore = None
         self._mongopath = self.path + "/mongo"
+
         if not os.path.exists(self._mongopath):
             os.makedirs(self._mongopath)
+
         self._mongoprocess = None
+
         if dbtype == 'auto':
             try:
                 self._start_mongo()
@@ -47,14 +57,19 @@ class Sandbox(object):
                 self._mingdatastore = ming.create_datastore('mim:///' + str(uuid.uuid4()))
                 self._dbconn = self._mingdatastore.db.luna
                 self.dbtype = 'ming'
+
         elif dbtype == 'mongo':
             self._start_mongo()
             self.dbtype = 'mongo'
+
         else:
             self._mingdatastore = ming.create_datastore('mim:///' + str(uuid.uuid4()))
             self._dbconn = self._mingdatastore.db.luna
             self.dbtype = 'ming'
+
         self._create_luna_homedir()
+        self._update_luna_conf('cluster', 'path', self.path)
+        self._update_luna_conf('cluster', 'user', self.user)
 
     def _create_luna_homedir(self):
         """
@@ -73,6 +88,17 @@ class Sandbox(object):
         source_template_path = virtual_env_path + '/usr/share/luna/templates'
         if not os.path.exists(self.path + '/templates'):
             shutil.copytree(source_template_path, self.path + '/templates')
+
+    def _update_luna_conf(self, section, key, value):
+        """
+        Update luna.conf
+        """
+
+        config= ConfigParser.RawConfigParser()
+        config.read('/etc/luna.conf')
+        config.set(section, key, value)
+        with open('/etc/luna.conf', 'wb') as configfile:
+            config.write(configfile)
 
     def _start_mongo(self):
         # will try 5 times

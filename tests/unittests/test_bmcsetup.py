@@ -18,8 +18,7 @@ class BMCSetupCreateTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        cluster = luna.Cluster(mongo_db=self.db, create=True,
-                               path=self.path, user=getpass.getuser())
+        cluster = luna.Cluster(mongo_db=self.db, create=True)
 
     def tearDown(self):
         self.sandbox.cleanup()
@@ -50,8 +49,7 @@ class BMCSetupReadTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        cluster = luna.Cluster(mongo_db=self.db, create=True,
-                               path=self.path, user=getpass.getuser())
+        cluster = luna.Cluster(mongo_db=self.db, create=True)
         self.bmc = luna.BMCSetup(name='testbmc', mongo_db=self.db, create=True)
 
     def tearDown(self):

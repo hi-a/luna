@@ -26,12 +26,7 @@ class ClusterMakeDNSTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(name='testosimage', path=self.path,
                                     mongo_db=self.db, create=True)
@@ -135,12 +130,7 @@ class ClusterMakeDHCPTests(unittest.TestCase):
         self.db = self.sandbox.db
         self.path = self.sandbox.path
 
-        self.cluster = luna.Cluster(
-            mongo_db=self.db,
-            create=True,
-            path=self.path,
-            user=getpass.getuser()
-        )
+        self.cluster = luna.Cluster(mongo_db=self.db, create=True)
 
         self.osimage = luna.OsImage(name='testosimage', path=self.path,
                                     mongo_db=self.db, create=True)
