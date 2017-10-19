@@ -128,6 +128,7 @@ class Connection(ConnectionBase):
         local_cmd = [to_bytes(i, errors='surrogate_or_strict') for i in local_cmd]
         p = subprocess.Popen(local_cmd, shell=False, stdin=stdin,
                 env={
+                    'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin',
                     'FAKE_KERN': self.osimage.get('kernver'),
                     'LD_PRELOAD': 'libluna-fakeuname.so'
                 },
