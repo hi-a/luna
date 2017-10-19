@@ -37,8 +37,8 @@ class LunaInventory(object):
         print json.dumps(self.inventory)
 
     def luna_inventory(self):
-        osimage_suffix = ".osimage.luna"
-        group_suffix = ".group.luna"
+        osimage_suffix = ".osimages.luna"
+        group_suffix = ".groups.luna"
         inventory = {}
         inventory['_meta'] = { 'hostvars': {}}
         osimages = {'hosts':[],'vars': {'ansible_connection': 'lchroot' }}
@@ -50,19 +50,25 @@ class LunaInventory(object):
                 'ansible_host': osimage,
             }
 
-        inventory['osimages'] = osimages
+        inventory['osimages.luna'] = osimages
+
         nodes = {}
+        inventory['groups.luna'] = {'hosts': []}
 
         for g in luna.list('group'):
             group = luna.Group(g)
             hosts = []
             nodes = group.list_nodes()
+
             for node_name in nodes:
                 node = luna.Node(node_name)
                 hosts.append(node_name)
                 inventory['_meta']['hostvars'][node.show()['name']]={
                     "bmc_ip":node.get_ip('BMC',version=4)}
+
             inventory[g + group_suffix] = {'hosts': hosts}
+            inventory['groups.luna']['hosts'].extend(hosts)
+
         return inventory
 
     # Empty inventory for testing.
