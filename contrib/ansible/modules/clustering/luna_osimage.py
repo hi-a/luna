@@ -34,7 +34,7 @@ def luna_osimage_present(data):
             ret &= osimage.set(key, data[key])
             changed = True
 
-    if data['comment'] != osimage.get(data['comment']):
+    if data['comment'] != osimage.get('comment'):
         ret &= osimage.set('comment', data['comment'])
         changed = True
 
