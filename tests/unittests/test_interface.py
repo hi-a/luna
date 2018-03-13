@@ -662,6 +662,26 @@ class SetIPTests(unittest.TestCase):
             [{'start': 3, 'end': 65533}],
         )
 
+    def test_set_wrong_ip(self):
+        self.group.set_net_to_if('eth0', self.network.name)
+
+        self.node = luna.Node(name=self.node.name,
+                              mongo_db=self.db)
+
+        self.assertFalse(self.node.set_ip(interface_name='eth0',
+                                          ip='10.40.0.1'))
+
+        self.network = luna.Network(name=self.network.name,
+                                    mongo_db=self.db)
+
+        self.assertEqual(
+            self.network._json['freelist'],
+            [{'start': 2, 'end': 65533}],
+        )
+
+        self.assertEqual(self.node.get_ip(interface_name='eth0'),
+                         '10.50.0.1')
+
 
 class ChangeGroupTests(unittest.TestCase):
     """
@@ -1063,7 +1083,7 @@ class GetMacTests(unittest.TestCase):
         if self.sandbox.dbtype != 'mongo':
             raise unittest.SkipTest(
                 'This test can be run only with MongoDB as a backend.'
-        )
+            )
 
         self.group.set_net_to_if('eth0', self.network.name)
         self.node.delete()
@@ -1085,7 +1105,7 @@ class GetMacTests(unittest.TestCase):
         if self.sandbox.dbtype != 'mongo':
             raise unittest.SkipTest(
                 'This test can be run only with MongoDB as a backend.'
-        )
+            )
         self.group.add_interface('BOOTIF')
         self.group.set_net_to_if('eth0', self.network.name)
         self.assertEqual(
@@ -1103,7 +1123,7 @@ class GetMacTests(unittest.TestCase):
         if self.sandbox.dbtype != 'mongo':
             raise unittest.SkipTest(
                 'This test can be run only with MongoDB as a backend.'
-        )
+            )
         self.group.add_interface('BOOTIF')
         self.group.set_net_to_if('eth0', self.network.name)
         self.group.set_net_to_if('BOOTIF', self.network.name)
@@ -1130,7 +1150,7 @@ class GetMacTests(unittest.TestCase):
         if self.sandbox.dbtype != 'mongo':
             raise unittest.SkipTest(
                 'This test can be run only with MongoDB as a backend.'
-        )
+            )
         self.group.add_interface('eth1')
         self.group.add_interface('BMC')
         self.group.set_net_to_if('eth1', self.network.name)

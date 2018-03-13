@@ -275,14 +275,20 @@ class Network(Base):
         net = self._json
 
         if type(ip1) is str:
-            ip1 = utils.ip.atorel(
-                ip1, net['NETWORK'], net['PREFIX'], self.version
-            )
+            try:
+                ip1 = utils.ip.atorel(
+                    ip1, net['NETWORK'], net['PREFIX'], self.version
+                )
+            except RuntimeError:
+                return None
 
         if type(ip2) is str:
-            ip2 = utils.ip.atorel(
-                ip2, net['NETWORK'], net['PREFIX'], self.version
-            )
+            try:
+                ip2 = utils.ip.atorel(
+                    ip2, net['NETWORK'], net['PREFIX'], self.version
+                )
+            except RuntimeError:
+                return None
 
         if bool(ip2) and ip2 <= ip1:
             self.log.error("Wrong range definition.")
