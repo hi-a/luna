@@ -122,13 +122,13 @@ def get_num_subnet(ip, prefix, ver=4):
         log.error(err_msg)
         raise RuntimeError, err_msg
 
-    if ver == 4 and prefix not in range(1, 32):
-        err_msg = "Prefix should be in the range [1..32]"
+    if ver == 4 and prefix not in range(1, 31):
+        err_msg = "Prefix should be in the range [1..30]"
         log.error(err_msg)
         raise RuntimeError, err_msg
 
-    if ver == 6 and prefix not in range(1, 128):
-        err_msg = "Prefix should be in the range [1..128]"
+    if ver == 6 and prefix not in range(1, 127):
+        err_msg = "Prefix should be in the range [1..126]"
         log.error(err_msg)
         raise RuntimeError, err_msg
 
