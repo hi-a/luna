@@ -102,8 +102,23 @@ class Node(Base):
 
             self.store(node)
 
+            # check if we are able to allocate IPs  for all interfaces
+            error_on_alloc = False
+            configured_interfaces = []
             for interface_name in self.group.list_ifs().keys():
-                self.add_ip(interface_name)
+                configured_interfaces.append(interface_name)
+                if not self.add_ip(interface_name):
+                    error_on_alloc = True
+                    break
+
+            if error_on_alloc:
+                # roll back allocations and throw exception
+                for interface_name in configured_interfaces[:-1]:
+                    self.del_ip(interface_name)
+                err_msg = ("Unable to allocate IP address " +
+                    "for interface '{}'").format(configured_interfaces[-1])
+                self.log.error(err_msg)
+                raise RuntimeError, err_msg
 
             # Link this node to its group and the current cluster
 
@@ -115,6 +130,7 @@ class Node(Base):
             if self.group.DBRef != self._json['group']:
                 err_msg = ("DBref of the group is not the same " +
                            "the node node belongs to")
+                self.log.error(err_msg)
                 raise RuntimeError, err_msg
 
         self.log = logging.getLogger(__name__ + '.' + self._json['name'])

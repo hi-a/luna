@@ -124,8 +124,53 @@ class NodeCreateTests(unittest.TestCase):
         doc = self.db['node'].find_one({'_id': nodeid})
         self.assertIsNone(doc)
 
-    def tearDown(self):
-        self.sandbox.cleanup()
+    def test_create_node_exhausted_ips(self):
+        net = luna.Network(
+            'net',
+            mongo_db=self.db,
+            create=True,
+            NETWORK='10.50.0.0',
+            PREFIX=16,
+        )
+
+        tight_net = luna.Network(
+            'tight_net',
+            mongo_db=self.db,
+            create=True,
+            NETWORK='10.51.0.0',
+            PREFIX=30,
+        )
+
+        self.group.add_interface('eth1')
+
+        self.group.set_net_to_if('eth0', net.name)
+        self.group.set_net_to_if('eth1', tight_net.name)
+
+        node = luna.Node(
+            group=self.group.name,
+            mongo_db=self.db,
+            create=True,
+        )
+
+        with self.assertRaises(RuntimeError):
+            luna.Node(
+                group=self.group.name,
+                mongo_db=self.db,
+                create=True,
+            )
+        tight_net = luna.Network(
+                name=tight_net.name, mongo_db=self.db)
+
+        net = luna.Network(
+                name=net.name, mongo_db=self.db)
+
+        self.group = luna.Group(
+                name=self.group.name, mongo_db=self.db)
+
+        self.assertEqual(tight_net._json['freelist'], [])
+        self.assertEqual(net._json['freelist'], [{'start': 2, 'end': 65533}])
+        self.assertEqual(len(self.group._json['_usedby_']['node']), 1)
+
 
 class NodeChangeTests(unittest.TestCase):
 
