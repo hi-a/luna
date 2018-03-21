@@ -993,7 +993,7 @@ class Node(Base):
         perc = 0.0
 
         if step == 'install.download':
-            name = "%20s" % self.name
+            name = "%20s" % self.boot_params['hostname']
             peer_id = ''.join(["{:02x}".format(ord(l)) for l in name])
             self._mongo_db
             tracker_collection = self._mongo_db['tracker']
