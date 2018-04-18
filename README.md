@@ -34,7 +34,7 @@ yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarc
 yum -y install wget python-docutils gcc-c++ rb_libtorrent-devel boost-devel make rpm-build redhat-rpm-config
 git clone https://github.com/clustervision/luna
 cd luna
-bash rpm/build.sh
+make rpm
 ```
 ### Install hostlist
 Source code is available [here](https://www.nsc.liu.se/~kent/python-hostlist/)
@@ -45,7 +45,7 @@ yum -y install python-hostlist-1.17-1.noarch.rpm
 ```
 ### Install Luna
 ```
-yum -y install luna-[0-9]*rpm
+yum -y install rpm/RPMS/x86_64/luna-[0-9]*rpm
 ```
 
 ### Configure DB credentials

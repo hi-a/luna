@@ -458,22 +458,3 @@ exit 0
 # CHANGELOG
 # ///////////////////////////////////////////////
 %changelog
- * Thu Feb 16 2017 Cedric Castagnede <cedric.castagnede@clustervision.com> 1.0
- - First version of this spec file.
- * Tue Feb 21 2017 Dmitry Chirikov <dmitry@chirikov.ru> 1.1
- - Cleanup
- - Migrating to 1.1
- - Using RPM's macroses
- * Mon May 22 2017 Dmitry Chirikov <dmitry@chirikov.ru> 1.2-0.1
- - IPv6 support
- - BOOTIF support. Refers to the interface that owns the mac address defined in the node object.
- - --force option for cluster delete
- - --bmcnetwork is moved to another special interface called 'BMC'
- - --debug option for luna CLI
- - --include and --rev_include for DNS zones to add custom records
- - list cached mac addresses
- - support parrallel gzip on osimage pack
- * Thu Jul  6 2017 Dmitry Chirikov <dmitry@chirikov.ru> 1.2-0.3
- - selinux package
- * Mon Aug 28 2017 Dmitry Chirikov <dmitry@chirikov.ru> 1.2-0.4
- - ansible module
