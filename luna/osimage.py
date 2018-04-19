@@ -356,6 +356,8 @@ class OsImage(Base):
         prepare_mounts(image_path)
         real_root = os.open("/", os.O_RDONLY)
         os.chroot(image_path)
+        chroot_path = os.open("/", os.O_DIRECTORY)
+        os.fchdir(chroot_path)
 
         dracut_succeed = True
 
@@ -399,6 +401,7 @@ class OsImage(Base):
         os.fchdir(real_root)
         os.chroot(".")
         os.close(real_root)
+        os.close(chroot_path)
         cleanup_mounts(image_path)
 
         if not dracut_succeed:
