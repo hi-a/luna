@@ -26,15 +26,13 @@ else
     BUILD=$(git describe --tag --long --match v${VERSION}  | sed -r 's/^v([\.0-9]*)-(.*)$/\2/' | tr - .)
 fi
 
-CHANGELOG=`git log --format="* %cd %aN%n- (%h) %s%d%n" --date=local | sed -r 's/[0-9]+:[0-9]+:[0-9]+ //'`
-
 mkdir -p ${SCRIPTDIR}/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
 sed -e "s/__VERSION__/$VERSION/" ${SCRIPTDIR}/${SPEC_IN_FILE} > ${SCRIPTDIR}/SPECS/${SPEC_FILE}
 sed -i "s/__BUILD__/$BUILD/" ${SCRIPTDIR}/SPECS/${SPEC_FILE}
 
 # git log to rpm's changelog
-git log --format="* %cd %aN%n- (%h) %s%d%n" --date=local | sed -r 's/[0-9]+:[0-9]+:[0-9]+ //' >>  ${SCRIPTDIR}/SPECS/${SPEC_FILE}
+git log --format="* %cd %aN%n- (%h) %s%d%n" --date=local --no-merges | sed -r 's/[0-9]+:[0-9]+:[0-9]+ //' >>  ${SCRIPTDIR}/SPECS/${SPEC_FILE}
 
 git archive --format=tar.gz --prefix=${PROD_NAME}-${VERSION}-${BUILD}/  -o ${SCRIPTDIR}/SOURCES/v${VERSION}-${BUILD}.tar.gz HEAD
 
