@@ -48,7 +48,7 @@ log = logging.getLogger()
 def_format = '%20s%40s\n'
 
 
-def print_table(header, content, ip_fields = None, ip_col = -1):
+def print_table(header, content, ip_fields=None, ip_col=-1):
     for key in content:
         if key[1] is None:
             key[1] = '-'
@@ -66,12 +66,15 @@ def print_table(header, content, ip_fields = None, ip_col = -1):
     sep1 = "+" + "+".join(["-" * (i + spaces + 1) for i in lengths]) + "+"
     if ip_fields and len(ip_fields) > 1:
         ip_fields[-1] += spaces - 1
-        sep2 = "+"\
-             + "+".join(["-" * (i + spaces + 1) for i in lengths[:ip_col]])\
-             + "+" + "+".join(["-" * (i) for i in ip_fields]) + "+"
+        sep2 = "+"
+        sep2 += "+".join(["-" * (i + spaces + 1) for i in lengths[:ip_col]])
+        sep2 += "+"
+        sep2 += "+".join(["-" * (i) for i in ip_fields]) + "+"
         if ip_col != len(lengths)-1:
-            sep2 += "+".join(["-" * (i + spaces + 1) for i in lengths[ip_col+1:]])\
-                  + "+"
+            sep2 += "+".join(
+                ["-" * (i + spaces + 1) for i in lengths[ip_col+1:]]
+            )
+            sep2 += "+"
     else:
         sep2 = sep1
 
@@ -113,7 +116,7 @@ def check_active_node():
         log.error("Inactive HA node.")
         exit(1)
 
-#################### Cluster
+# Cluster
 
 
 def cluster_init(**args):
@@ -396,7 +399,7 @@ def _run_command(cmd, descr, err):
         log.error(err)
         sys.exit(1)
 
-#################### OsImage
+# OsImage
 
 
 def osimage_list():
@@ -441,7 +444,6 @@ def osimage_show(**args):
         print(osimage.get('grab_exclude_list'))
         return True
     out_json = osimage.show()
-    #out_str = ''
     header = ['Parameter', 'Value']
     content = []
     name = out_json.pop('name')
@@ -644,7 +646,7 @@ def osimage_rename(**args):
     return osimage.rename(args['newname'])
 
 
-#################### BMCSetup
+# BMCSetup
 
 
 def bmcsetup_list(**args):
@@ -714,7 +716,7 @@ def bmcsetup_rename(**args):
     bmcsetup = luna.BMCSetup(args['name'])
     return bmcsetup.rename(args['newname'])
 
-#################### Network
+# Network
 
 
 def network_list():
@@ -823,7 +825,7 @@ def network_rename(**args):
     net = luna.Network(args['name'])
     return net.rename(args['newname'])
 
-#################### Group
+# Group
 
 
 def _get_group_interfaces(group):
@@ -923,7 +925,6 @@ def group_show(**args):
 
     grpname = out_json.pop('name')
     comment = out_json.pop('comment')
-    #if_names = group.list_ifs().keys()
     out_json['interfaces'] = _get_group_interfaces(group)
     header = ['Parameter', 'Value']
     content = []
@@ -1035,7 +1036,7 @@ def group_rename(**args):
     grp = luna.Group(args['name'])
     return grp.rename(args['newname'])
 
-#################### Node
+# Node
 
 
 def _get_node_interfaces(node):
@@ -1067,7 +1068,7 @@ def _get_node_interfaces(node):
     return if_str
 
 
-def _format_node_interfaces(interfaces, ip_lengths = False):
+def _format_node_interfaces(interfaces, ip_lengths=False):
 
     if_str = ''
     padding = 0
@@ -1079,18 +1080,21 @@ def _format_node_interfaces(interfaces, ip_lengths = False):
     for i, interface in enumerate(interfaces):
 
         if ip_lengths:
-             if if_str:
-                 if_str += ' | '
-             if_str += '{:<{}}'.format(interface+':', ip_lengths[i]['name']+1)
-             all_ips = filter(None, interfaces[interface].values())
-             ip_field = ' '.join(all_ips)
-             if len(all_ips) < 2:
-                 if_str += ' {:<{}}'.format(ip_field, ip_lengths[i]['max'])
-             else:
-                 if_str += ' {:<{}}'.format(interfaces[interface][4],
-                                                             ip_lengths[i][4])
-                 if_str += ' {:<{}}'.format(interfaces[interface][6],
-                                      ip_lengths[i]['max']-ip_lengths[i][4]-1)
+            if if_str:
+                if_str += ' | '
+            if_str += '{:<{}}'.format(interface+':', ip_lengths[i]['name']+1)
+            all_ips = filter(None, interfaces[interface].values())
+            ip_field = ' '.join(all_ips)
+            if len(all_ips) < 2:
+                if_str += ' {:<{}}'.format(ip_field, ip_lengths[i]['max'])
+            else:
+                if_str += ' {:<{}}'.format(
+                    interfaces[interface][4], ip_lengths[i][4]
+                )
+                if_str += ' {:<{}}'.format(
+                    interfaces[interface][6],
+                    ip_lengths[i]['max'] - ip_lengths[i][4] - 1
+                )
         else:
             first_ip = True
             for ver in [4, 6]:
@@ -1104,10 +1108,11 @@ def _format_node_interfaces(interfaces, ip_lengths = False):
                     if_str += '{:<{}}{}\n'.format(" ", padding+1, ip)
     if ip_lengths:
         for i in range(len(interfaces), len(ip_lengths)):
-            if_str += ' {:<{}}'.format('|', ip_lengths[i]['name']+
-                                                       ip_lengths[i]['max']+4)
-     
-    return if_str
+            if_str += ' {:<{}}'.format(
+                '|', ip_lengths[i]['name'] + ip_lengths[i]['max'] + 4
+            )
+
+    return if_str.strip()
 
 
 def node_list(**args):
@@ -1116,12 +1121,12 @@ def node_list(**args):
     content = []
     group = args['group']
     oneline = args['one_line']
-    ip_lengths = []    
+    ip_lengths = []
 
     if group:
-      groups = [ group ]
+        groups = [group]
     else:
-      groups = luna.list('group')
+        groups = luna.list('group')
     db = None
 
     if oneline:
@@ -1135,7 +1140,7 @@ def node_list(**args):
             sorted_keys.sort()
             d = len(group.list_ifs().keys()) - len(ip_lengths)
             ip_lengths += [{'name': 0, 4: 0, 'max': 0} for i in range(d)]
-            pending6 += [ 0 for i in range(d)]
+            pending6 += [0 for i in range(d)]
 
             for node in sorted_keys:
                 enum_ifs = enumerate(nodes[node]['interfaces'].items())
@@ -1148,18 +1153,24 @@ def node_list(**args):
                         len6 = len(ips[6])
                     else:
                         len6 = 0
-                    ip_lengths[i]['name'] = max(len(ifname),
-                                                         ip_lengths[i]['name'])
+                    ip_lengths[i]['name'] = max(
+                        len(ifname),
+                        ip_lengths[i]['name']
+                    )
                     ip_lengths[i][4] = max(len4, ip_lengths[i][4])
                     if len4 and len6:
                         pending6[i] = max(len6, pending6[i])
                     else:
-                        ip_lengths[i]['max'] = max(len4 + len6,
-                                                          ip_lengths[i]['max'])
+                        ip_lengths[i]['max'] = max(
+                            len4 + len6,
+                            ip_lengths[i]['max']
+                        )
         for i, lengths in enumerate(ip_lengths):
             if pending6[i]:
-                lengths['max'] = max(pending6[i] + lengths[4] + 1, 
-                                                                lengths['max'])
+                lengths['max'] = max(
+                    pending6[i] + lengths[4] + 1,
+                    lengths['max']
+                )
 
     for group_name in groups:
         group = luna.Group(group_name, mongo_db=db)
@@ -1169,10 +1180,12 @@ def node_list(**args):
         sorted_keys = nodes.keys()
         sorted_keys.sort()
         for node in sorted_keys:
-            if_str = _format_node_interfaces(nodes[node]['interfaces'], ip_lengths)
+            if_str = _format_node_interfaces(
+                nodes[node]['interfaces'], ip_lengths
+            )
             mac = nodes[node]['mac']
             content.append([node, '[' + group_name + ']', mac, if_str])
-    ip_fields = [l['max'] + l['name'] + 4 for l in ip_lengths] 
+    ip_fields = [l['max'] + l['name'] + 4 for l in ip_lengths]
     print_table(header, content, ip_fields, ip_column)
     return True
 
@@ -1276,7 +1289,7 @@ def node_rename(**args):
     node = luna.Node(args['name'])
     return node.rename(args['newname'])
 
-#################### Switch
+# Switch
 
 
 def switch_list(**args):
@@ -1358,7 +1371,7 @@ def switch_rename(**args):
     sw = luna.Switch(args['name'])
     return sw.rename(args['newname'])
 
-#################### Otherdev
+# Otherdev
 
 
 def _list_otherdev_interfaces(dev):
@@ -1470,6 +1483,7 @@ def otherdev_rename(**args):
     otherdev = luna.OtherDev(args['name'])
     return otherdev.rename(args['newname'])
 
+
 parser = ArgumentParser(prog='luna', description='Manage Luna Cluster')
 parser.add_argument('--debug', '-d', action='store_true',
                     help='Show debug information')
@@ -1547,10 +1561,6 @@ cmd.add_argument('--cluster_ips', metavar='A.A.A.A,B.B.B.B',
                  help='IPs of the interfaces dedicated to provisioninig')
 cmd.add_argument('--named_include_file', help='Include file for named.conf')
 cmd.add_argument('--named_zone_dir', help='Dir where to store bind zone files')
-#cmd.add_argument('--tracker_address', help='Torrent tracker address')
-#cmd.add_argument('--tracker_port', type=int, help='Torrent tracker port')
-#cmd.add_argument('--tracker_clean', action='store_true',
-#                 help='Clean database from outdated records')
 cmd.add_argument('--comment', '-C', action='store_true', help='Add comment')
 
 # sync
@@ -1599,11 +1609,6 @@ cmd_group.add_argument('--grab_filesystems', '-f', action='store_true',
                        help='Show filesystems to grab from host')
 cmd_group.add_argument('--comment', '-C', action='store_true',
                        help='Print comment')
-
-# listkerns
-#cmd = osimage_a.add_parser('listkerns',
-#                           help='List installed kernels in OsImage')
-#cmd.add_argument('name', help='Name of the OsImage')
 
 # add
 cmd = osimage_a.add_parser('add', help='Add osimage')
@@ -1852,7 +1857,8 @@ cmd.add_argument('name', help='Name of the Group')
 # list
 cmd = node_a.add_parser('list', help='List Nodes')
 cmd.add_argument('--group', '-g',  help='List nodes from a group')
-cmd.add_argument('--one-line', '-1',  help='One line of output per node', action='store_true')
+cmd.add_argument('--one-line', '-1',  help='One line of output per node',
+                 action='store_true')
 
 # show
 cmd = node_a.add_parser('show', help='Show Node')
