@@ -36,6 +36,13 @@ git clone https://github.com/clustervision/luna
 cd luna
 make rpm
 ```
+
+Note. Instead of building luna from scratch you can easily configure repository and install everything from it:
+
+```
+curl https://updates.clustervision.com/luna/1.2/centos/luna-1.2.repo > /etc/yum.repos.d/luna-1.2.repo
+yum install luna
+```
 ### Install hostlist
 Source code is available [here](https://www.nsc.liu.se/~kent/python-hostlist/)
 ```
