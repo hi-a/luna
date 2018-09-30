@@ -6,7 +6,7 @@ check() {
 
 depends() {
     echo network
-    echo nss-softokn
+    echo url-lib
     return 0
 }
 
@@ -16,17 +16,12 @@ install() {
                    blkdiscard fstrim nslookup dig ps vi \
                    lsblk lspci blkid find dmidecode
 
-    inst_libdir_file libnssdbm3.so libnsspem.so libsoftokn3.chk \
-                     libsoftokn3.so libsqlite3.so
-
     inst "$moddir/sshd_config" "/etc/ssh/sshd_config"
     inst "$moddir/bashrc" "/root/.bashrc"
     inst "$moddir/profile" "/root/.profile"
     inst_simple /etc/ssh/ssh_host_rsa_key
     inst_simple /etc/ssh/ssh_host_ecdsa_key
     inst_simple /etc/ssh/ssh_host_ed25519_key
-    inst_simple /etc/pki/tls/certs/ca-bundle.crt
-    inst_simple /etc/ssl/certs/ca-certificates.crt
     mkdir -m 0700 -p "$initdir/root/.ssh"
     inst_simple /root/.ssh/authorized_keys
 
