@@ -37,8 +37,6 @@ import subprocess
 import libtorrent
 import exceptions
 
-from platform import linux_distribution
-
 from luna.base import Base
 from luna.cluster import Cluster
 from luna import utils
@@ -106,7 +104,7 @@ class OsImage(Base):
             os.chroot(".")
             os.close(real_root)
 
-	    self._osfamily = dist[0]
+            self._osfamily = dist[0]
 
             kernels = self.get_kernel_ver(path)
             if not kernels:
