@@ -52,7 +52,7 @@ function are_macs_equal () {
 function run_dhcpclient() {
     . /lib/dracut-lib.sh
     . /lib/net-lib.sh
-    /usr/sbin/dhclient -lf /luna/dhclient.leases
+    dhclient -lf /luna/dhclient.leases
     . $hookdir/initqueue/setup_net_*.sh
     rm -f /tmp/net.*.did-setup
 }
@@ -114,10 +114,10 @@ function luna_start () {
 
 function luna_finish () {
     # shutdown sshd
-    /usr/bin/ps h --ppid `cat /var/run/sshd.pid` -o 'pid' | while read pid; do kill $pid; done
+    ps h --ppid `cat /var/run/sshd.pid` -o 'pid' | while read pid; do kill $pid; done
     kill `cat /var/run/sshd.pid`
     # shutdown dhclient
-    /usr/sbin/dhclient -lf /luna/dhclient.leases -x
+    dhclient -lf /luna/dhclient.leases -x
     # bring interfaces down
     if [ -f /luna/luna_nic ]; then
         luna_nic=$(cat /luna/luna_nic)
