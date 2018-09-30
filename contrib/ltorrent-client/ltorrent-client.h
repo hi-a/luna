@@ -31,12 +31,17 @@
 #include "libtorrent/entry.hpp"
 #include "libtorrent/bencode.hpp"
 #include "libtorrent/session.hpp"
-#include "libtorrent/session.hpp"
+#include "libtorrent/torrent_info.hpp"
 #include <libtorrent/alert_types.hpp>
 #include <vector>
 #include <sstream>
 #include <thread>
 #include <chrono>
+
+#ifdef LIBTORRENT_RASTERBAR9
+#include <boost/make_shared.hpp>
+#include "libtorrent/torrent_status.hpp"
+#endif
 
 class LtorrentClient {
 public:

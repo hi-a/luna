@@ -132,7 +132,11 @@ int LtorrentClient::DownloadTorrent() {
   lt::error_code ec;
 
   p.save_path = "./";
+#ifdef LIBTORRENT_RASTERBAR9
+  p.ti = boost::make_shared<lt::torrent_info>(_opts.torrentfile, ec);
+#else
   p.ti = new lt::torrent_info(_opts.torrentfile, ec);
+#endif
   if (ec)
   {
     std::cerr << ec.message() << "\n";

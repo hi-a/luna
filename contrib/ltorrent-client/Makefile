@@ -5,5 +5,13 @@ all:
 		-lboost_system -ltorrent-rasterbar -lpthread \
 		-lm ltorrent-client.o optionparser.o
 
+debian:
+	g++ optionparser.cpp 	-std=c++11 -c -o optionparser.o
+	g++ ltorrent-client.cpp -std=c++11 -c -o ltorrent-client.o \
+        -D LIBTORRENT_RASTERBAR9
+	g++ main.cpp            -std=c++11    -o ltorrent-client \
+		ltorrent-client.o optionparser.o \
+		-lboost_system -ltorrent-rasterbar -lpthread -lm
+
 clean :
 	rm -f ltorrent-client *.o
