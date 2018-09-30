@@ -21,8 +21,10 @@ along with Luna.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from config import torrent_key
+from platform import linux_distribution
 
 import os
+import re
 import sys
 import pwd
 import rpm
@@ -66,7 +68,7 @@ class OsImage(Base):
                          'kernopts': type(''), 'kernmodules': type(''),
                          'dracutmodules': type(''), 'tarball': type(''),
                          'torrent': type(''), 'kernfile': type(''),
-                         'initrdfile': type(''), 'os_family': type(''),
+                         'initrdfile': type(''), 'osfamily': type(''),
                          'grab_exclude_list': type(''),
                          'grab_filesystems': type(''), 'comment': type('')}
 
@@ -98,17 +100,15 @@ class OsImage(Base):
 
             real_root = os.open("/", os.O_RDONLY)
             os.chroot(path)
-            dist = linux_distribution(supported_dists=('debian', 'redhat'))
+            dist = linux_distribution(supported_dists=('debian', 'redhat'),
+                                      full_distribution_name=0)
             os.fchdir(real_root)
             os.chroot(".")
             os.close(real_root)
 
-            if dist[0].lower() in ['debian', 'ubuntu']:
-                self._family = 'debian'
-            elif dist[0].lower() in ['centos linux', 'fedora', 'redhat']:
-                self._family = 'redhat'
+	    self._osfamily = dist[0]
 
-            kernels = self.get_package_ver(path, 'kernel')
+            kernels = self.get_kernel_ver(path)
             if not kernels:
                 err_msg = "No kernels installed in '{}'".format(path)
                 self.log.error(err_msg)
@@ -131,7 +131,7 @@ class OsImage(Base):
 
             # Store the new osimage in the datastore
 
-            osimage = {'name': name, 'path': path, 'family': self._family,
+            osimage = {'name': name, 'path': path, 'osfamily': self._osfamily,
                        'kernver': kernver, 'kernopts': kernopts,
                        'kernfile': '', 'initrdfile': '',
                        'dracutmodules': 'luna,-i18n,-plymouth',
@@ -151,39 +151,40 @@ class OsImage(Base):
         self.log = logging.getLogger(__name__ + '.' + self._name)
 
     def list_kernels(self):
-        std_kerns = self.get_package_ver(self.get('path'), 'kernel')
+        std_kerns = self.get_kernel_ver(self.get('path'))
         configured_kerns = self._json['kernver']
         versions = list(set(std_kerns + [configured_kerns]))
         versions.sort()
         return versions
 
-    def get_package_ver(self, path, package):
-        versions = list()
+    def get_kernel_ver(self, path):
+        versions = []
 
         try:
-            family = self._family
+            family = self._osfamily
         except AttributeError:
-            family = self.get('family')
+            family = self.get('osfamily')
 
-        if family == 'debian':
-            cmd = ("dpkg --admindir=" + path + "/var/lib/dpkg -l "
-                   "| awk '/^.i +linux-image-extra/ && $2~/[0-9]/ {print $2}' "
-                   "| cut -d'-' -f4- | sort -r")
-            ps = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-            out = ps.communicate()[0].strip().splitlines()
-            versions.extend(out)
-
-        elif family == 'redhat':
+        if family == 'redhat':
             rpm.addMacro("_dbpath", path + '/var/lib/rpm')
             ts = rpm.TransactionSet()
+            versions = list()
+
             try:
-                mi = ts.dbMatch('name', package)
+                mi = ts.dbMatch('name', 'kernel')
                 for h in mi:
-                    version = "%s-%s.%s" % (h['VERSION'],
-                                            h['RELEASE'], h['ARCH'])
+                    version = "%s-%s.%s" % (h['VERSION'], h['RELEASE'], h['ARCH'])
                     versions.append(version)
             except rpm.error:
-                versions = []
+                return []
+
+        elif family == 'debian':
+            regex = re.compile(r'^.*((\d{1,3}\.){2}(\d{1,4}-){2}\D.*).list$')
+            files = os.listdir(path + '/var/lib/dpkg/info')
+            for f in files:
+                if f.startswith('linux-image') and f.endswith('.list'):
+                    version = regex.match(f).groups()[0]
+                    versions.append(version)
 
         return versions
 
