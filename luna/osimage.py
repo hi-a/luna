@@ -214,7 +214,7 @@ class OsImage(Base):
             # dirty, but 4 times faster
             tar_out = subprocess.Popen(
                 [
-                    '/usr/bin/tar',
+                    utils.helpers.find_binary('tar'),
                     '-C', '/',
                     '--one-file-system',
                     '--xattrs',
@@ -222,7 +222,7 @@ class OsImage(Base):
                     '--acls',
                     '--checkpoint=100',
                     '--exclude=./tmp/' + tarfile,
-                    '--use-compress-program=/usr/bin/pigz',
+                    '--use-compress-program=' + utils.helpers.find_binary('/pigz'),
                     '-c', '-f', '/tmp/' + tarfile, '.'
                 ],
                 stderr=subprocess.PIPE
@@ -330,10 +330,11 @@ class OsImage(Base):
 
     def pack_boot(self):
         def mount(source, target, fs):
-            subprocess.Popen(['/usr/bin/mount', '-t', fs, source, target])
+            subprocess.Popen([utils.helpers.find_binary('mount'),
+                              '-t', fs, source, target])
 
         def umount(source):
-            subprocess.Popen(['/usr/bin/umount', source])
+            subprocess.Popen([utils.helpers.find_binary('umount'), source])
 
         def prepare_mounts(path):
             mount('devtmpfs', path + '/dev', 'devtmpfs')
@@ -395,7 +396,8 @@ class OsImage(Base):
         create = None
 
         try:
-            dracut_modules = subprocess.Popen(['/usr/sbin/dracut', '--kver', kernver,
+            dracut_modules = subprocess.Popen([utils.helpers.find_binary('dracut'),
+                                               '--kver', kernver,
                                                '--list-modules'],
                                               stdout=subprocess.PIPE)
             luna_exists = False
@@ -412,7 +414,8 @@ class OsImage(Base):
                 self.log.error(err_msg)
                 raise RuntimeError, err_msg
 
-            dracut_cmd = (['/usr/sbin/dracut', '--force', '--kver', kernver] +
+            dracut_cmd = ([utils.helpers.find_binary('dracut'),
+                           '--force', '-q', '--kver', kernver] +
                           modules_add + modules_remove + drivers_add +
                           drivers_remove + [tmp_path + '/' + initrdfile])
 
@@ -542,7 +545,7 @@ class OsImage(Base):
         # Construct rsync command line
 
         rsync_opts = r'''-avxz -HAX '''
-        rsync_opts += r'''-e "/usr/bin/ssh -o StrictHostKeyChecking=no '''
+        rsync_opts += r'''-e "''' + utils.helpers.find_binary('ssh') + r''' -o StrictHostKeyChecking=no '''
         rsync_opts += r'''-o UserKnownHostsFile=/dev/null" '''
         rsync_opts += r'''--progress --delete --exclude-from='''
         rsync_opts += exclude_file_name + r''' '''
@@ -579,7 +582,8 @@ class OsImage(Base):
 
             # Rsync comand. Finally
 
-            cmd = r'''/usr/bin/rsync ''' + rsync_opts + r''' root@''' + host
+            cmd = utils.helpers.find_binary('rsync')
+            cmd += r''' ''' + rsync_opts + r''' root@''' + host
             cmd += r''':''' + fs + r''' ''' + local_fs
 
             if verbose:

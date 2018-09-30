@@ -382,3 +382,14 @@ def find_duplicate_net(num_net, mongo_db=None):
         return False
     else:
         return True
+
+def find_binary(binary):
+    path = ['/usr/sbin', '/sbin', '/usr/bin', '/bin']
+    file_path = ''
+
+    for p in path:
+        file_path = '%s/%s' % (p, binary)
+        if os.path.isfile(file_path):
+            break
+
+    return file_path
