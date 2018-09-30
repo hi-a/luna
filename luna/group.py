@@ -251,6 +251,7 @@ class Group(Base):
 
         osimage = OsImage(id=self.get('osimage').id, mongo_db=self._mongo_db)
 
+        params['osfamily'] = osimage.get('osfamily')
         params['kernver'] = osimage.get('kernver')
         params['kernopts'] = osimage.get('kernopts')
         params['torrent'] = osimage.get('torrent')
