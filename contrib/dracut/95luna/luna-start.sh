@@ -81,6 +81,8 @@ function luna_start () {
     echo "sshd:x:74:74:Privilege-separated SSH:/var/empty/sshd:/sbin/nologin" >> /etc/passwd
     echo sshd:x:74: >> /etc/group
     mkdir -p /var/empty/sshd
+    mkdir -p /var/run/sshd
+    mkdir -p /run/sshd
     /usr/sbin/sshd > /dev/null 2>&1
     echo "Luna: Start shell on tty2"
     luna_ctty2=/dev/tty2

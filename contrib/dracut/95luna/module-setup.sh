@@ -13,7 +13,7 @@ depends() {
 install() {
     dracut_install ssh sshd scp tar wget curl awk sed gzip basename dd partx \
                    parted mkfs.ext2 mkfs.ext3 mkfs.ext4 mkfs.xfs ipmitool \
-                   blkdiscard fstrim nslookup dig \
+                   blkdiscard fstrim nslookup dig ps vi \
                    lsblk lspci blkid find dmidecode
 
     inst_libdir_file libnssdbm3.so libnsspem.so libsoftokn3.chk \
@@ -26,6 +26,7 @@ install() {
     inst_simple /etc/ssh/ssh_host_ecdsa_key
     inst_simple /etc/ssh/ssh_host_ed25519_key
     inst_simple /etc/pki/tls/certs/ca-bundle.crt
+    inst_simple /etc/ssl/certs/ca-certificates.crt
     mkdir -m 0700 -p "$initdir/root/.ssh"
     inst_simple /root/.ssh/authorized_keys
 
