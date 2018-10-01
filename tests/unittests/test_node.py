@@ -11,11 +11,13 @@ from helper_utils import Sandbox
 
 class NodeCreateTests(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -174,11 +176,13 @@ class NodeCreateTests(unittest.TestCase):
 
 class NodeChangeTests(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         packages = [
@@ -608,11 +612,13 @@ class NodeChangeTests(unittest.TestCase):
 
 class NodeBootInstallTests(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -738,6 +744,7 @@ class NodeBootInstallTests(unittest.TestCase):
                 + 'tmpfs   /       tmpfs    defaults        0 0\n'
                 + 'EOF'
             ),
+            'osfamily': 'redhat',
             'kernopts': '',
             'kernver': '3.10-999-el0.x86_64',
             'torrent': '',

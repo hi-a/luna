@@ -11,11 +11,13 @@ class AddNetToGroupTests(unittest.TestCase):
     Add network to group with nodes
     """
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -164,11 +166,13 @@ class DeleteIPTests(unittest.TestCase):
     Test for delete ip addresses from node
     """
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -328,11 +332,13 @@ class GetIPTests(unittest.TestCase):
     Test for Node.get_ip
     """
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -496,11 +502,13 @@ class SetIPTests(unittest.TestCase):
     Test for Node.get_ip
     """
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -688,11 +696,13 @@ class ChangeGroupTests(unittest.TestCase):
     Test for Node.get_ip
     """
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -1035,11 +1045,13 @@ class GetMacTests(unittest.TestCase):
     Test for Group.get_macs()
     """
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print

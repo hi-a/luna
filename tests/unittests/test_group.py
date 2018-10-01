@@ -8,11 +8,13 @@ from helper_utils import Sandbox
 
 class GroupCreateTests(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -176,11 +178,13 @@ class GroupCreateTests(unittest.TestCase):
 
 class GroupConfigTests(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -348,11 +352,13 @@ class GroupConfigTests(unittest.TestCase):
         end_dict = self.db['group'].find_one({'_id': self.group._id})
         self.assertEqual(start_dict, end_dict)
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def test_osimage(self,
                      mock_rpm_addmacro,
                      mock_rpm_transactionset,
+                     mock_os_chroot,
                      ):
 
         packages = [
@@ -737,11 +743,13 @@ class GroupConfigTests(unittest.TestCase):
 
 class GroupBootInstallParamsTests(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -860,6 +868,7 @@ class GroupBootInstallParamsTests(unittest.TestCase):
             'prescript': '',
             'domain': '',
             'postscript': group_json['postscript'],
+            'osfamily': 'redhat',
             'kernopts': '',
             'kernver': '3.10-999-el0.x86_64',
             'torrent': osimage_json['torrent'] + '.torrent'

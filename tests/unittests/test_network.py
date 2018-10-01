@@ -291,11 +291,13 @@ class NetworkAttributesTestsIPv6(unittest.TestCase):
 
 class ZoneDataIPv4(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -481,11 +483,13 @@ class ZoneDataIPv4(unittest.TestCase):
 
 class ZoneDataIPv6(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print

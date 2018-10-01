@@ -26,11 +26,13 @@ class OsimageCreateTests(unittest.TestCase):
     def tearDown(self):
         self.sandbox.cleanup()
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def test_create_osimage_with_defaults(self,
                                           mock_rpm_addmacro,
                                           mock_rpm_transactionset,
+                                          mock_os_chroot,
                                           ):
         packages = [
             {'VERSION': '3.10', 'RELEASE': '999-el0', 'ARCH': 'x86_64'},
@@ -55,11 +57,13 @@ class OsimageCreateTests(unittest.TestCase):
         for attr in expected:
             self.assertEqual(doc[attr], expected[attr])
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def test_create_osimage_with_same_path(self,
                                            mock_rpm_addmacro,
                                            mock_rpm_transactionset,
+                                           mock_os_chroot,
                                            ):
         packages = [
             {'VERSION': '3.10', 'RELEASE': '999-el0', 'ARCH': 'x86_64'},
@@ -77,11 +81,13 @@ class OsimageCreateTests(unittest.TestCase):
 
         self.assertRaises(RuntimeError, luna.OsImage, **args)
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def test_create_osimage_wo_kernel(self,
                                       mock_rpm_addmacro,
                                       mock_rpm_transactionset,
+                                      mock_os_chroot,
                                       ):
         mock_rpm_transactionset.return_value.dbMatch.return_value = []
 
@@ -104,11 +110,13 @@ class OsimageCreateTests(unittest.TestCase):
 
         self.assertRaises(RuntimeError, luna.OsImage, **args)
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def test_create_osimage_wrong_kernver(self,
                                           mock_rpm_addmacro,
                                           mock_rpm_transactionset,
+                                          mock_os_chroot,
                                           ):
         packages = [
             {'VERSION': '3.10', 'RELEASE': '999-el0', 'ARCH': 'x86_64'},
@@ -126,11 +134,13 @@ class OsimageCreateTests(unittest.TestCase):
 
         self.assertRaises(RuntimeError, luna.OsImage, **args)
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def test_create_osimage_wrong_grablist(self,
                                            mock_rpm_addmacro,
                                            mock_rpm_transactionset,
+                                           mock_os_chroot,
                                            ):
         packages = [
             {'VERSION': '3.10', 'RELEASE': '999-el0', 'ARCH': 'x86_64'},
@@ -151,11 +161,13 @@ class OsimageCreateTests(unittest.TestCase):
 
 class OsimageMethodsTests(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -287,7 +299,7 @@ class OsimageMethodsTests(unittest.TestCase):
 
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
-    def test_get_package_ver(self,
+    def test_get_kernel_ver(self,
                              mock_rpm_addmacro,
                              mock_rpm_transactionset,
                              ):
@@ -298,7 +310,7 @@ class OsimageMethodsTests(unittest.TestCase):
         mock_rpm_transactionset.return_value.dbMatch.return_value = packages
         #mock_rpm_transactionset.dbMatch = [p1]
         self.assertEqual(
-            self.osimage.get_package_ver('', 'test'),
+            self.osimage.get_kernel_ver(''),
             ['3.10-999-el0.x86_64', '3.11-999-el0.x86_64']
         )
 

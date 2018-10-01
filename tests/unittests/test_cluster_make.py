@@ -8,11 +8,13 @@ from helper_utils import Sandbox
 
 class ClusterMakeDNSTests(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
@@ -112,11 +114,13 @@ class ClusterMakeDNSTests(unittest.TestCase):
 
 class ClusterMakeDHCPTests(unittest.TestCase):
 
+    @mock.patch('os.chroot')
     @mock.patch('rpm.TransactionSet')
     @mock.patch('rpm.addMacro')
     def setUp(self,
               mock_rpm_addmacro,
               mock_rpm_transactionset,
+              mock_os_chroot,
               ):
 
         print
