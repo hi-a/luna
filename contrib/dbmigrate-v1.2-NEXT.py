@@ -24,6 +24,7 @@ along with Luna.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import pymongo
 import uuid
+import os
 from platform import linux_distribution
 from luna.utils.helpers import get_con_options
 from luna.config import db_name
