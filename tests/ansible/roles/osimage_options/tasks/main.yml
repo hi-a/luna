@@ -59,6 +59,7 @@
     - "| kernmodules          | ipmi_devintf,ipmi_si,ipmi_msghandler,test    |"
     - "| kernopts             | customoptions                                |"
     - "| kernver              | 1.0                                          |"
+    - "| osfamily             | redhat                                       |"
     - "| path                 | /tmp/osimage                                 |"
     - "| comment              | Created by ansible                           |"
     - "+----------------------+----------------------------------------------+"
